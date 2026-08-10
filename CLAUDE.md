@@ -336,3 +336,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   first, before the submissions they are identified by. Order matters.
 - **Only drafts are deletable.** `deletePost` filters on `status = 'draft'` so live content can
   never disappear in one click — unpublish first, then delete.
+- **`/privacy` states real retention periods, not boilerplate.** "30 days" and "7 days" on that
+  page are the actual pg_cron windows in migrations 0002 and 0003. Change one and you must change
+  the other, or the site is making a promise it doesn't keep. `privacyUpdated` in `site.ts` is the
+  visible "last updated" date — bump it when the policy's substance changes.
+- **Security headers live in `next.config.ts`**, applied to every route. The CSP keeps
+  `'unsafe-inline'` for scripts on purpose: the strict alternative needs per-request nonces from
+  middleware, which would force dynamic rendering site-wide. If you add a third-party script or
+  embed, add its origin to `script-src`/`connect-src` or it will be silently blocked.

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 
 import { submitBlogPost } from "@/app/actions/public";
@@ -354,7 +355,16 @@ export function SubmitForm() {
         value="on"
         defaultChecked={valueOf(state, "consent") === "on"}
         label="Yes — send this to an editor"
-        hint="This is my own writing. I'm OK with an editor reading it and lightly editing it for clarity, and I understand nothing gets published until I say yes."
+        hint={
+          <>
+            This is my own writing. I&apos;m OK with an editor reading it and lightly editing it
+            for clarity, and I understand nothing gets published until I say yes. See our{" "}
+            <Link className="font-bold text-red-deep underline decoration-pink-deep decoration-2 underline-offset-2" href="/privacy">
+              privacy policy
+            </Link>
+            .
+          </>
+        }
         error={state.errors?.consent}
       />
 

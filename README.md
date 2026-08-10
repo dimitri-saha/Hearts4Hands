@@ -20,6 +20,7 @@ Product spec: [`docs/PRD.md`](docs/PRD.md) · Developer/agent guide: [`CLAUDE.md
 | Donate | `/donate` | Running total, materials/research split, links out to GoFundMe / Venmo / PayPal |
 | Stories | `/blog` · `/blog/[slug]` · `/blog/submit` | Published posts, category filters, submission form |
 | Contact | `/contact` | Who to email, general contact form, partner info |
+| Privacy | `/privacy` | What's collected, retention periods, deletion requests |
 | Admin | `/admin` | Editor sign-in, review volunteer hours, publish stories, edit impact numbers, read messages |
 
 **No payment processing on-site** and **no volunteer logins** — both are out of scope per PRD §6.

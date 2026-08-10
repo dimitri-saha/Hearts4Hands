@@ -414,7 +414,16 @@ export function VolunteerForm() {
           id="consent"
           name="consent"
           label="Everything here is accurate, and you can email me about it."
-          hint="If you're under 18, please check with a parent or guardian first."
+          hint={
+            <>
+              If you&apos;re under 18, please check with a parent or guardian first. What we do with
+              this is set out in our{" "}
+              <Link className="font-bold text-red-deep underline decoration-pink-deep decoration-2 underline-offset-2" href="/privacy">
+                privacy policy
+              </Link>
+              .
+            </>
+          }
           defaultChecked={valueOf(state, "consent") === "on"}
           error={errors?.consent}
         />

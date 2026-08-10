@@ -17,6 +17,9 @@ export const site = {
   locale: "en_US",
 } as const;
 
+/** Shown on /privacy. Bump whenever the policy's substance changes. */
+export const privacyUpdated = "2026-08-10";
+
 export const contact = {
   general: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@hearts4hands.org",
   editor: process.env.NEXT_PUBLIC_EDITOR_EMAIL ?? "stories@hearts4hands.org",
@@ -62,6 +65,7 @@ export const footerNav: { heading: string; items: NavItem[] }[] = [
       { href: "/about#team", label: "The team" },
       { href: "/blog", label: "Stories & education" },
       { href: "/contact", label: "Contact us" },
+      { href: "/privacy", label: "Privacy" },
     ],
   },
 ];
