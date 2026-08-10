@@ -154,8 +154,10 @@ export function VolunteerForm() {
     return (
       <SuccessPanel title="Got it — thank you.">
         <p>{state.message}</p>
+        {/* No "check your inbox" line here — whether a confirmation was
+            actually sent depends on RESEND_API_KEY, so the server action says
+            it in `state.message` only when the send succeeded. */}
         <ul className="mx-auto mt-4 flex max-w-md list-none flex-col gap-2 text-left">
-          <li>A confirmation is on its way to your inbox.</li>
           <li>A real person reviews every submission. Give it a couple of weeks.</li>
           <li>
             If you told us you made cards, we&apos;ll email you the current mailing address

@@ -141,7 +141,7 @@ export async function submitVolunteer(
     );
   }
 
-  await Promise.allSettled([
+  const [confirmation] = await Promise.allSettled([
     sendEmail({
       to: data.email,
       subject: `Thanks for volunteering with ${site.name}!`,
@@ -159,10 +159,20 @@ export async function submitVolunteer(
     ),
   ]);
 
+  // Only promise a confirmation email if one actually went out — `sendEmail`
+  // is a no-op until RESEND_API_KEY is set, and telling someone to watch an
+  // inbox that will stay empty is worse than saying nothing.
+  const emailed = confirmation.status === "fulfilled" && confirmation.value;
+
   return successState(
-    data.hours > 0
-      ? "Your hours are logged and a real person will review them soon."
-      : "You're signed up! Check your inbox for what happens next.",
+    [
+      data.hours > 0
+        ? "Your hours are logged and a real person will review them soon."
+        : "You're signed up, and a real person will be in touch.",
+      emailed ? "A confirmation is on its way to your inbox." : null,
+    ]
+      .filter(Boolean)
+      .join(" "),
   );
 }
 
