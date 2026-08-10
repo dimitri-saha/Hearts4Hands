@@ -1,0 +1,357 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+
+import { errorState, successState, type ActionState } from "@/lib/action-state";
+import { requireAdmin } from "@/lib/auth";
+import { excerptFrom, slugify } from "@/lib/utils";
+import { getServiceClient, getSessionClient } from "@/lib/supabase/server";
+import { PROOF_BUCKET } from "@/lib/supabase/types";
+import { fieldErrors, publishSchema, statsSchema } from "@/lib/validation";
+
+/**
+ * Admin-only mutations.
+ *
+ * Every function here starts with `requireAdmin()` — which redirects to the
+ * login page when the caller isn't on the `admins` allow-list. Server actions
+ * are POST endpoints reachable by anyone who knows the action id, so the guard
+ * has to live in the action, not only in the page that renders the form.
+ */
+
+const NO_DB = "Supabase isn't configured, so there's nothing to save to yet.";
+
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+
+export async function signIn(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  const next = String(formData.get("next") ?? "/admin");
+
+  if (!email || !password) {
+    return errorState("Enter your email and password.");
+  }
+
+  const supabase = await getSessionClient();
+  if (!supabase) return errorState(NO_DB);
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error || !data.user) {
+    // Deliberately vague: don't confirm which accounts exist.
+    return errorState("That email and password didn't match. Please try again.");
+  }
+
+  const { data: admin } = await supabase
+    .from("admins")
+    .select("user_id")
+    .eq("user_id", data.user.id)
+    .maybeSingle();
+
+  if (!admin) {
+    await supabase.auth.signOut();
+    return errorState(
+      "That account isn't set up as an editor yet. Ask an existing admin to add you.",
+    );
+  }
+
+  // Only allow same-origin relative paths as a redirect target.
+  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/admin";
+  redirect(safeNext);
+}
+
+export async function signOut() {
+  const supabase = await getSessionClient();
+  await supabase?.auth.signOut();
+  redirect("/admin/login");
+}
+
+// ---------------------------------------------------------------------------
+// Volunteer submissions
+// ---------------------------------------------------------------------------
+
+export async function reviewVolunteer(formData: FormData): Promise<void> {
+  await requireAdmin("/admin/volunteers");
+
+  const id = String(formData.get("id") ?? "");
+  const status = String(formData.get("status") ?? "");
+  const note = String(formData.get("reviewerNote") ?? "").trim();
+
+  if (!id || !["pending", "approved", "rejected"].includes(status)) return;
+
+  const supabase = getServiceClient();
+  if (!supabase) return;
+
+  const { error } = await supabase
+    .from("volunteer_signups")
+    .update({
+      status: status as "pending" | "approved" | "rejected",
+      reviewer_note: note || null,
+      reviewed_at: status === "pending" ? null : new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) console.error("[admin] reviewVolunteer failed:", error.message);
+  revalidatePath("/admin/volunteers");
+  revalidatePath("/admin");
+}
+
+/**
+ * Short-lived signed URL for a private proof upload. Called from the
+ * volunteers page during render — never exposed as a public route.
+ */
+export async function getProofUrl(path: string): Promise<string | null> {
+  await requireAdmin("/admin/volunteers");
+
+  const supabase = getServiceClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.storage
+    .from(PROOF_BUCKET)
+    .createSignedUrl(path, 60 * 30);
+
+  if (error) {
+    console.error("[admin] signed URL failed:", error.message);
+    return null;
+  }
+  return data.signedUrl;
+}
+
+// ---------------------------------------------------------------------------
+// Story submissions & posts
+// ---------------------------------------------------------------------------
+
+export async function setSubmissionStatus(formData: FormData): Promise<void> {
+  await requireAdmin("/admin/stories");
+
+  const id = String(formData.get("id") ?? "");
+  const status = String(formData.get("status") ?? "");
+  const note = String(formData.get("reviewerNote") ?? "").trim();
+
+  if (!id || !["pending", "approved", "rejected"].includes(status)) return;
+
+  const supabase = getServiceClient();
+  if (!supabase) return;
+
+  const { error } = await supabase
+    .from("blog_submissions")
+    .update({
+      status: status as "pending" | "approved" | "rejected",
+      reviewer_note: note || null,
+      reviewed_at: status === "pending" ? null : new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) console.error("[admin] setSubmissionStatus failed:", error.message);
+  revalidatePath("/admin/stories");
+  revalidatePath("/admin");
+}
+
+/**
+ * Publish (or save as draft) an edited submission. Slugs are uniquified with a
+ * numeric suffix rather than failing, so an editor never loses their edits to
+ * a collision on the way out.
+ */
+export async function publishStory(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAdmin("/admin/stories");
+
+  const parsed = publishSchema.safeParse({
+    submissionId: formData.get("submissionId") || undefined,
+    slug: formData.get("slug") ?? "",
+    title: formData.get("title") ?? "",
+    category: formData.get("category") ?? "",
+    authorName: formData.get("authorName") ?? "",
+    authorLocation: formData.get("authorLocation") ?? "",
+    excerpt: formData.get("excerpt") ?? "",
+    body: formData.get("body") ?? "",
+    featured: formData.get("featured") ?? "",
+    status: formData.get("status") ?? "published",
+  });
+
+  if (!parsed.success) {
+    return errorState("Please check the highlighted fields.", fieldErrors(parsed.error));
+  }
+
+  const supabase = getServiceClient();
+  if (!supabase) return errorState(NO_DB);
+
+  const data = parsed.data;
+  const baseSlug = slugify(data.slug || data.title) || "story";
+
+  const { data: taken } = await supabase
+    .from("posts")
+    .select("slug")
+    .like("slug", `${baseSlug}%`);
+
+  let slug = baseSlug;
+  const existing = new Set((taken ?? []).map((r) => r.slug));
+  for (let i = 2; existing.has(slug); i++) slug = `${baseSlug}-${i}`;
+
+  const { data: inserted, error } = await supabase
+    .from("posts")
+    .insert({
+      slug,
+      title: data.title,
+      category: data.category,
+      author_name: data.authorName,
+      author_location: data.authorLocation,
+      excerpt: data.excerpt || excerptFrom(data.body),
+      body: data.body,
+      status: data.status,
+      featured: data.featured === "on",
+      published_at: data.status === "published" ? new Date().toISOString() : null,
+      submission_id: data.submissionId ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (error || !inserted) {
+    console.error("[admin] publishStory failed:", error?.message);
+    return errorState("Couldn't save that post. Please try again.");
+  }
+
+  if (data.submissionId) {
+    await supabase
+      .from("blog_submissions")
+      .update({
+        status: "approved",
+        reviewed_at: new Date().toISOString(),
+        published_post_id: inserted.id,
+      })
+      .eq("id", data.submissionId);
+  }
+
+  revalidatePath("/blog");
+  revalidatePath(`/blog/${slug}`);
+  revalidatePath("/admin/stories");
+  revalidatePath("/");
+
+  return successState(
+    data.status === "published"
+      ? `Published — it's live at /blog/${slug}.`
+      : "Saved as a draft. It won't appear on the site until you publish it.",
+  );
+}
+
+/** Toggle a published post's visibility or featured flag. */
+export async function updatePost(formData: FormData): Promise<void> {
+  await requireAdmin("/admin/stories");
+
+  const id = String(formData.get("id") ?? "");
+  const intent = String(formData.get("intent") ?? "");
+  if (!id) return;
+
+  const supabase = getServiceClient();
+  if (!supabase) return;
+
+  const patch =
+    intent === "publish"
+      ? { status: "published" as const, published_at: new Date().toISOString() }
+      : intent === "unpublish"
+        ? { status: "draft" as const }
+        : intent === "feature"
+          ? { featured: true }
+          : intent === "unfeature"
+            ? { featured: false }
+            : null;
+
+  if (!patch) return;
+
+  // Only one post carries the featured flag at a time.
+  if (intent === "feature") {
+    await supabase.from("posts").update({ featured: false }).eq("featured", true);
+  }
+
+  const { error } = await supabase.from("posts").update(patch).eq("id", id);
+  if (error) console.error("[admin] updatePost failed:", error.message);
+
+  revalidatePath("/blog");
+  revalidatePath("/admin/stories");
+  revalidatePath("/");
+}
+
+// ---------------------------------------------------------------------------
+// Impact numbers — PRD §5.3, manually maintained
+// ---------------------------------------------------------------------------
+
+export async function updateStats(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAdmin("/admin/stats");
+
+  const parsed = statsSchema.safeParse({
+    totalRaised: formData.get("totalRaised") || 0,
+    materials: formData.get("materials") || 0,
+    research: formData.get("research") || 0,
+    goal: formData.get("goal") || 0,
+    cardsMade: formData.get("cardsMade") || 0,
+    volunteers: formData.get("volunteers") || 0,
+    hoursLogged: formData.get("hoursLogged") || 0,
+    hospitalsServed: formData.get("hospitalsServed") || 0,
+    note: formData.get("note") ?? "",
+  });
+
+  if (!parsed.success) {
+    return errorState("Please check the highlighted fields.", fieldErrors(parsed.error));
+  }
+
+  const supabase = getServiceClient();
+  if (!supabase) return errorState(NO_DB);
+
+  const d = parsed.data;
+  const toCents = (dollars: number) => Math.round(dollars * 100);
+
+  const { error } = await supabase
+    .from("site_stats")
+    .update({
+      total_raised_cents: toCents(d.totalRaised),
+      materials_cents: toCents(d.materials),
+      research_cents: toCents(d.research),
+      goal_cents: toCents(d.goal),
+      cards_made: d.cardsMade,
+      volunteers: d.volunteers,
+      hours_logged: d.hoursLogged,
+      hospitals_served: d.hospitalsServed,
+      note: d.note || null,
+    })
+    .eq("id", 1);
+
+  if (error) {
+    console.error("[admin] updateStats failed:", error.message);
+    return errorState("Couldn't save those numbers. Please try again.");
+  }
+
+  revalidatePath("/");
+  revalidatePath("/donate");
+  revalidatePath("/about");
+  revalidatePath("/admin/stats");
+
+  const allocated = d.materials + d.research;
+  const mismatch = Math.abs(allocated - d.totalRaised) > 0.01;
+
+  return successState(
+    mismatch
+      ? `Saved. Heads up: materials + research is $${allocated.toLocaleString()}, but the total says $${d.totalRaised.toLocaleString()}.`
+      : "Saved — the new numbers are live on the site.",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Contact messages
+// ---------------------------------------------------------------------------
+
+export async function setMessageHandled(formData: FormData): Promise<void> {
+  await requireAdmin("/admin/messages");
+
+  const id = String(formData.get("id") ?? "");
+  const handled = String(formData.get("handled") ?? "") === "true";
+  if (!id) return;
+
+  const supabase = getServiceClient();
+  if (!supabase) return;
+
+  const { error } = await supabase.from("contact_messages").update({ handled }).eq("id", id);
+  if (error) console.error("[admin] setMessageHandled failed:", error.message);
+
+  revalidatePath("/admin/messages");
+  revalidatePath("/admin");
+}

@@ -1,0 +1,295 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* ==========================================================================
+   Hearts4Hands design tokens
+   Palette derived from the logo: warm white, crayon red, blush pink, kraft brown.
+   The whole site is light-only on purpose — PRD §4.2 makes white the primary
+   background, and a dark mode would fight the paper/crayon metaphor.
+   ========================================================================== */
+
+@theme {
+  /* --- Paper & neutrals ------------------------------------------------ */
+  --color-paper: #fffcf8;
+  --color-paper-deep: #fdf7f0;
+  --color-cream: #fbf1e6;
+  --color-kraft: #f2e2cf;
+
+  /* --- Pinks ----------------------------------------------------------- */
+  --color-blush: #fbe8e4;
+  --color-blush-deep: #f7d9d5;
+  --color-pink: #f2c3bc;
+  --color-pink-deep: #e79a93;
+
+  /* --- Reds (primary accent) ------------------------------------------- */
+  --color-red: #d24a5e;
+  --color-red-deep: #b03a4e;
+  --color-berry: #8d2a3d;
+
+  /* --- Browns (grounding neutral / crayon outline) --------------------- */
+  --color-brown: #4a342a;
+  --color-brown-mid: #7a5a47;
+  --color-brown-soft: #a78970;
+  --color-brown-faint: #d9c6b4;
+
+  /* --- Warm supporting hues (illustration fills) ----------------------- */
+  --color-tan: #c79a6b;
+  --color-honey: #e8c39e;
+  --color-leaf: #7fa86a;
+  --color-sky: #9cc4d8;
+  --color-sun: #f2c14e;
+
+  /* --- Type ------------------------------------------------------------ */
+  --font-display: var(--font-baloo), "Trebuchet MS", system-ui, sans-serif;
+  --font-hand: var(--font-patrick), "Bradley Hand", cursive;
+  --font-body: var(--font-nunito), system-ui, -apple-system, sans-serif;
+
+  /* --- Motion ---------------------------------------------------------- */
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  :root {
+    color-scheme: light;
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-brown);
+    font-family: var(--font-body);
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--color-berry);
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Chunky, friendly focus ring — visible against every section background. */
+  :focus-visible {
+    outline: 3px dashed var(--color-red);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--color-pink);
+    color: var(--color-berry);
+  }
+}
+
+/* ==========================================================================
+   Paper grain
+   A single feTurbulence tile, inlined as a data URI so there are zero network
+   requests. Multiplied over the page at very low opacity — enough to read as
+   "printed on paper", not enough to hurt text contrast.
+   ========================================================================== */
+
+@utility paper-grain-overlay {
+  position: fixed;
+  inset: 0;
+  /* Above page content (z-10) so the grain multiplies over section fills, but
+     below the sticky header (z-50) so nav text keeps full contrast. */
+  z-index: 30;
+  pointer-events: none;
+  opacity: 0.38;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.16'/%3E%3C/svg%3E");
+}
+
+/* A softer, section-scoped version for tinted bands. */
+@utility grain-soft {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.1'/%3E%3C/svg%3E");
+}
+
+/* ==========================================================================
+   Hand-cut edges
+   Asymmetric border-radii read as "cut out with scissors" rather than
+   "rounded rectangle". Four variants so repeated cards in a grid don't line
+   up into an obvious pattern.
+   ========================================================================== */
+
+@utility rough-1 {
+  border-radius: 22px 30px 20px 28px / 28px 20px 30px 22px;
+}
+@utility rough-2 {
+  border-radius: 30px 20px 28px 22px / 22px 28px 20px 30px;
+}
+@utility rough-3 {
+  border-radius: 26px 34px 24px 18px / 18px 26px 32px 24px;
+}
+@utility rough-4 {
+  border-radius: 18px 26px 34px 24px / 30px 22px 24px 28px;
+}
+
+/* Pill-ish but wobbly — for buttons and tags. */
+@utility rough-pill {
+  border-radius: 42px 38px 44px 36px / 36px 44px 38px 42px;
+}
+@utility rough-pill-alt {
+  border-radius: 38px 44px 36px 42px / 44px 36px 42px 38px;
+}
+
+/* Blobby — for illustration frames and avatars. */
+@utility rough-blob {
+  border-radius: 58% 42% 47% 53% / 46% 51% 49% 54%;
+}
+
+/* ==========================================================================
+   Crayon strokes & decorations
+   ========================================================================== */
+
+/* Wobbly hand-drawn underline sitting behind/under a heading. */
+@utility crayon-underline {
+  position: relative;
+  display: inline-block;
+}
+
+/* Dashed "stitched" inset line, like a sewn card edge. */
+@utility stitched {
+  box-shadow: inset 0 0 0 2px var(--color-paper), inset 0 0 0 4px currentColor;
+}
+
+/*
+ * Torn top edge that makes no assumption about what's behind it.
+ *
+ * The `TornEdge` SVG paints the incoming colour and leaves the rest
+ * transparent, so it needs to know the outgoing colour. This clips the
+ * element's own background instead, letting whatever sits above show through —
+ * which is what the footer needs, since it can't know how a page ends.
+ */
+@utility torn-top {
+  clip-path: polygon(
+    0% 14px, 4% 7px, 9% 16px, 14% 6px, 20% 15px, 26% 5px, 32% 16px, 38% 7px,
+    45% 17px, 51% 6px, 57% 15px, 63% 5px, 69% 16px, 75% 8px, 81% 17px,
+    87% 6px, 93% 14px, 100% 7px, 100% 100%, 0% 100%
+  );
+}
+
+/* Offset flat shadow — a sticker peeled onto the page. */
+@utility sticker-shadow {
+  box-shadow: 4px 5px 0 0 color-mix(in srgb, var(--color-brown) 16%, transparent);
+}
+@utility sticker-shadow-sm {
+  box-shadow: 3px 3px 0 0 color-mix(in srgb, var(--color-brown) 14%, transparent);
+}
+@utility sticker-shadow-red {
+  box-shadow: 4px 5px 0 0 color-mix(in srgb, var(--color-red) 24%, transparent);
+}
+
+/* ==========================================================================
+   Prose (blog bodies)
+   ========================================================================== */
+
+@utility prose-storybook {
+  --tw-prose-body: var(--color-brown);
+  --tw-prose-headings: var(--color-berry);
+  --tw-prose-lead: var(--color-brown-mid);
+  --tw-prose-links: var(--color-red-deep);
+  --tw-prose-bold: var(--color-berry);
+  --tw-prose-counters: var(--color-red);
+  --tw-prose-bullets: var(--color-pink-deep);
+  --tw-prose-hr: var(--color-brown-faint);
+  --tw-prose-quotes: var(--color-brown-mid);
+  --tw-prose-quote-borders: var(--color-pink);
+  --tw-prose-captions: var(--color-brown-soft);
+  --tw-prose-code: var(--color-berry);
+  --tw-prose-pre-bg: var(--color-cream);
+  --tw-prose-pre-code: var(--color-brown);
+  --tw-prose-th-borders: var(--color-brown-faint);
+  --tw-prose-td-borders: var(--color-brown-faint);
+}
+
+/* ==========================================================================
+   Animation
+   ========================================================================== */
+
+@keyframes h4h-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--tilt, 0deg));
+  }
+  50% {
+    transform: translateY(-9px) rotate(calc(var(--tilt, 0deg) + 1.5deg));
+  }
+}
+
+@keyframes h4h-wiggle {
+  0%,
+  100% {
+    transform: rotate(var(--tilt, 0deg));
+  }
+  25% {
+    transform: rotate(calc(var(--tilt, 0deg) - 3deg));
+  }
+  75% {
+    transform: rotate(calc(var(--tilt, 0deg) + 3deg));
+  }
+}
+
+@keyframes h4h-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes h4h-draw {
+  from {
+    stroke-dashoffset: var(--dash, 1000);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@utility animate-float {
+  animation: h4h-float 6s ease-in-out infinite;
+}
+@utility animate-wiggle-slow {
+  animation: h4h-wiggle 5s ease-in-out infinite;
+}
+@utility animate-pop-in {
+  animation: h4h-pop-in 0.55s var(--ease-bounce) both;
+}
+@utility animate-draw {
+  stroke-dasharray: var(--dash, 1000);
+  animation: h4h-draw 1.6s ease-out both;
+}
