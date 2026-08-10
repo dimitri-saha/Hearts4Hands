@@ -239,6 +239,11 @@ Copy `.env.example` → `.env.local`. Nothing is required to run `npm run dev`.
 5. Copy the project URL + anon key + service-role key into env vars.
 
 Tables: `volunteer_signups` · `blog_submissions` · `posts` · `contact_messages` · `site_stats` (single row, id=1) · `admins`.
+
+Run `supabase/migrations/0002_purge_rejected.sql` too — it adds
+`purge_rejected_submissions(interval)` and a daily pg_cron job that deletes not-approved story
+submissions 30 days after the decision. Volunteer submissions are deliberately excluded: their
+proof photos live in Storage, and deleting the row from SQL would orphan the file in the bucket.
 Storage: private bucket `volunteer-proof` for proof-of-cards uploads; admins read via signed URLs.
 
 ---
@@ -305,3 +310,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Watch for duplicate DOM ids.** A `<Section id="message">` once shadowed a
   `<textarea id="message">`, so `CharacterCount`'s `getElementById` found the section and
   crashed the whole page on `.value.length`. Anchor ids and field ids share one namespace.
+
+- **Rejection has to be enforced in three places**, not one. A not-approved submission hides its
+  publish form; `setSubmissionStatus` unpublishes any post already created from it; and the posts
+  table hides Publish/Feature for a post whose source submission was rejected (`fromRejected`).
+  Miss any of them and a story you turned down can go back on the blog.

@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { setSubmissionStatus, updatePost } from "@/app/actions/admin";
+import {
+  clearRejectedSubmissions,
+  setSubmissionStatus,
+  updatePost,
+} from "@/app/actions/admin";
 import {
   AdminAlert,
   AdminEmpty,
@@ -93,24 +97,39 @@ export default async function AdminStoriesPage({
     .order("created_at", { ascending: false })
     .limit(SUBMISSION_LIMIT);
 
-  const [pendingCount, approvedCount, rejectedCount, submissionResult, postResult] =
-    await Promise.all([
-      countFor("pending"),
-      countFor("approved"),
-      countFor("rejected"),
-      filter === "all" ? submissionQuery : submissionQuery.eq("status", filter),
-      supabase
-        .from("posts")
-        .select("*")
-        .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(POST_LIMIT),
-    ]);
+  const [
+    pendingCount,
+    approvedCount,
+    rejectedCount,
+    submissionResult,
+    postResult,
+    rejectedIdResult,
+  ] = await Promise.all([
+    countFor("pending"),
+    countFor("approved"),
+    countFor("rejected"),
+    filter === "all" ? submissionQuery : submissionQuery.eq("status", filter),
+    supabase
+      .from("posts")
+      .select("*")
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .limit(POST_LIMIT),
+    // Ids only, and unfiltered by the tab: a post's source submission may not
+    // be in the visible page of submissions above, but we still need to know
+    // it was turned down before offering to publish the post again.
+    supabase.from("blog_submissions").select("id").eq("status", "rejected"),
+  ]);
 
   const loadError = submissionResult.error ?? postResult.error;
   const submissions = (submissionResult.data ?? []) as BlogSubmission[];
   const posts = (postResult.data ?? []) as Post[];
+  const rejectedTotal = rejectedCount.count ?? 0;
+  const rejectedSubmissionIds = new Set((rejectedIdResult.data ?? []).map((row) => row.id));
+  /** True when this post came from a submission that was later not approved. */
+  const fromRejected = (post: Post) =>
+    post.submission_id !== null && rejectedSubmissionIds.has(post.submission_id);
   const totalSubmissions =
-    (pendingCount.count ?? 0) + (approvedCount.count ?? 0) + (rejectedCount.count ?? 0);
+    (pendingCount.count ?? 0) + (approvedCount.count ?? 0) + rejectedTotal;
 
   const postColumns: AdminColumn<Post>[] = [
     {
@@ -157,6 +176,9 @@ export default async function AdminStoriesPage({
         <div className="flex flex-wrap items-center gap-1.5">
           <StatusBadge status={post.status} />
           {post.featured ? <StatusBadge status="published" label="★ Featured" /> : null}
+          {fromRejected(post) ? (
+            <StatusBadge status="rejected" label="× Story not approved" />
+          ) : null}
         </div>
       ),
     },
@@ -175,22 +197,36 @@ export default async function AdminStoriesPage({
       header: "Actions",
       align: "right",
       hideLabelOnMobile: true,
-      cell: (post) => (
-        <div className="flex flex-wrap justify-end gap-1.5">
-          <PostAction
-            id={post.id}
-            intent={post.status === "published" ? "unpublish" : "publish"}
-            label={post.status === "published" ? "Unpublish" : "Publish"}
-            tone={post.status === "published" ? "quiet" : "go"}
-          />
-          <PostAction
-            id={post.id}
-            intent={post.featured ? "unfeature" : "feature"}
-            label={post.featured ? "Un-feature" : "Feature"}
-            tone="quiet"
-          />
-        </div>
-      ),
+      cell: (post) =>
+        // A post whose source submission was turned down must not be
+        // re-publishable or featurable from here — that is how a rejected
+        // story ends up back on the blog. Unpublish stays available so a live
+        // one can still be taken down.
+        fromRejected(post) ? (
+          <div className="flex flex-col items-end gap-1.5">
+            {post.status === "published" ? (
+              <PostAction id={post.id} intent="unpublish" label="Unpublish" tone="quiet" />
+            ) : null}
+            <span className="max-w-56 text-right text-sm text-brown-mid">
+              Its story was not approved. Reset that submission to pending to publish again.
+            </span>
+          </div>
+        ) : (
+          <div className="flex flex-wrap justify-end gap-1.5">
+            <PostAction
+              id={post.id}
+              intent={post.status === "published" ? "unpublish" : "publish"}
+              label={post.status === "published" ? "Unpublish" : "Publish"}
+              tone={post.status === "published" ? "quiet" : "go"}
+            />
+            <PostAction
+              id={post.id}
+              intent={post.featured ? "unfeature" : "feature"}
+              label={post.featured ? "Un-feature" : "Feature"}
+              tone="quiet"
+            />
+          </div>
+        ),
     },
   ];
 
@@ -242,6 +278,35 @@ export default async function AdminStoriesPage({
               { value: "all", label: "All", count: totalSubmissions },
             ]}
           />
+
+          {/* Two-step confirmation, done with <details> so it still works
+              without JavaScript — this deletes rows and cannot be undone. */}
+          {rejectedTotal > 0 ? (
+            <details className="rounded-xl border border-brown-faint bg-cream/50 open:bg-paper">
+              <summary className="cursor-pointer list-none px-4 py-2.5 font-display text-sm font-bold text-brown-mid marker:content-none hover:bg-cream">
+                🗑 Clear not-approved stories ({formatNumber(rejectedTotal)})
+              </summary>
+              <div className="flex flex-col gap-3 border-t border-brown-faint px-4 py-4">
+                <p className="text-sm text-brown-mid">
+                  Permanently deletes{" "}
+                  <strong className="font-display text-berry">
+                    {formatNumber(rejectedTotal)} not-approved{" "}
+                    {rejectedTotal === 1 ? "story" : "stories"}
+                  </strong>{" "}
+                  and cannot be undone. Anything already published from them stays on the blog.
+                  Not-approved stories are also removed automatically 30 days after the decision.
+                </p>
+                <form action={clearRejectedSubmissions}>
+                  <button
+                    type="submit"
+                    className="rounded-lg border border-red bg-red/10 px-3 py-1.5 font-display text-sm font-bold text-berry hover:bg-red/20"
+                  >
+                    Yes, delete {rejectedTotal === 1 ? "it" : "them"} permanently
+                  </button>
+                </form>
+              </div>
+            </details>
+          ) : null}
         </div>
 
         {submissions.length === 0 ? (
@@ -325,6 +390,19 @@ export default async function AdminStoriesPage({
                         </div>
                       </form>
 
+                      {/* A not-approved story is not publishable. Leaving the
+                          publish form here made rejection decorative — you could
+                          still set a status, feature it, and put it live. */}
+                      {sub.status === "rejected" ? (
+                        <p className="w-full rounded-xl border border-brown-faint bg-cream/50 px-4 py-3 text-sm text-brown-mid">
+                          <strong className="font-display text-berry">Not approved.</strong>{" "}
+                          Publishing is turned off for this story. Reset it to pending above if
+                          you change your mind.
+                          {sub.published_post_id
+                            ? " It had been published, so the post was taken off the blog and kept as a draft below."
+                            : null}
+                        </p>
+                      ) : (
                       <details className="w-full rounded-xl border border-brown-faint bg-cream/50 open:bg-paper">
                         <summary className="cursor-pointer list-none px-4 py-2.5 font-display font-bold text-berry marker:content-none hover:bg-cream">
                           ✎ Edit &amp; publish this story
@@ -347,6 +425,7 @@ export default async function AdminStoriesPage({
                           />
                         </div>
                       </details>
+                      )}
                     </div>
                   }
                 >

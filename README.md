@@ -129,7 +129,10 @@ Everything below is done at **`/admin`** by a signed-in editor — no code chang
   proof photo, leave a reviewer note. Approved hours are what count toward volunteer awards.
   Export the raw table from the Supabase dashboard when you need a spreadsheet.
 - **Stories** → `/admin/stories`. Read a submission, edit it, publish it. Publishing creates the
-  public post at `/blog/<slug>` and marks the submission approved.
+  public post at `/blog/<slug>` and marks the submission approved. Turning a story down disables
+  publishing for it and takes any post already made from it off the blog (kept as a draft). Use
+  **Clear not-approved stories** to delete them all at once; whatever you leave is removed
+  automatically 30 days after the decision — see `supabase/migrations/0002_purge_rejected.sql`.
 - **Impact numbers** → `/admin/stats`. Money raised, the materials/research split, cards made,
   volunteers, hours. These are manual by design (PRD §5.3) and feed the home page and Donate page.
 - **Messages** → `/admin/messages`.

@@ -134,16 +134,61 @@ export async function setSubmissionStatus(formData: FormData): Promise<void> {
   const supabase = getServiceClient();
   if (!supabase) return;
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("blog_submissions")
     .update({
       status: status as "pending" | "approved" | "rejected",
       reviewer_note: note || null,
       reviewed_at: status === "pending" ? null : new Date().toISOString(),
     })
-    .eq("id", id);
+    .eq("id", id)
+    .select("published_post_id")
+    .maybeSingle();
 
-  if (error) console.error("[admin] setSubmissionStatus failed:", error.message);
+  if (error) {
+    console.error("[admin] setSubmissionStatus failed:", error.message);
+  }
+
+  // Turning a story down has to take it off the public blog too. Without this,
+  // a story that was published and later rejected stays live, and the only
+  // sign anything changed is a badge on an admin page nobody is looking at.
+  // Unpublishing (rather than deleting) keeps it recoverable.
+  if (!error && status === "rejected" && updated?.published_post_id) {
+    const { error: unpublishError } = await supabase
+      .from("posts")
+      .update({ status: "draft", featured: false })
+      .eq("id", updated.published_post_id);
+
+    if (unpublishError) {
+      console.error("[admin] unpublishing a rejected story failed:", unpublishError.message);
+    } else {
+      revalidatePath("/blog");
+      revalidatePath("/");
+    }
+  }
+
+  revalidatePath("/admin/stories");
+  revalidatePath("/admin");
+}
+
+/**
+ * Permanently delete every not-approved story submission.
+ *
+ * Deliberately hard-deletes rather than archiving: these are unpublished
+ * drafts of other people's personal writing, and holding onto rejected copies
+ * indefinitely is the wrong default. Any post already created from one is
+ * unaffected — `posts.submission_id` is ON DELETE SET NULL.
+ */
+export async function clearRejectedSubmissions(): Promise<void> {
+  await requireAdmin("/admin/stories");
+
+  const supabase = getServiceClient();
+  if (!supabase) return;
+
+  const { error } = await supabase.from("blog_submissions").delete().eq("status", "rejected");
+
+  if (error) console.error("[admin] clearRejectedSubmissions failed:", error.message);
+
   revalidatePath("/admin/stories");
   revalidatePath("/admin");
 }
