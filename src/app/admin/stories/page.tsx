@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   clearRejectedSubmissions,
   deletePost,
+  deleteSubmission,
   setSubmissionStatus,
   updatePost,
 } from "@/app/actions/admin";
@@ -433,6 +434,10 @@ export default async function AdminStoriesPage({
                         </div>
                       </details>
                       )}
+
+                      {/* Destructive, so it sits last — after the review and
+                          publish controls, not before them. */}
+                      <DeleteSubmissionButton id={sub.id} title={sub.title} />
                     </div>
                   }
                 >
@@ -513,6 +518,35 @@ export default async function AdminStoriesPage({
 }
 
 /**
+ * Delete one submission from the queue, whatever its status. Two-step, same
+ * reasoning as DeletePostButton.
+ */
+function DeleteSubmissionButton({ id, title }: { id: string; title: string }) {
+  return (
+    <details className="w-full rounded-xl border border-brown-faint bg-cream/50 open:bg-paper">
+      <summary className="cursor-pointer list-none px-4 py-2 font-display text-sm font-bold text-brown-mid marker:content-none hover:bg-cream">
+        🗑 Remove this submission from the queue
+      </summary>
+      <div className="flex flex-col gap-2 border-t border-brown-faint px-4 py-3">
+        <p className="text-sm text-brown-mid">
+          Permanently deletes the submitted text of “{title}”. This can&apos;t be undone. A post
+          already published from it stays on the blog.
+        </p>
+        <form action={deleteSubmission}>
+          <input type="hidden" name="id" value={id} />
+          <button
+            type="submit"
+            className="rounded-lg border border-red bg-red/10 px-3 py-1.5 font-display text-sm font-bold text-berry hover:bg-red/20"
+          >
+            Yes, delete it
+          </button>
+        </form>
+      </div>
+    </details>
+  );
+}
+
+/**
  * Delete a draft post. Two-step via <details> so it can't be a stray click,
  * and works without JavaScript. Only offered for drafts — see `deletePost`.
  */
@@ -524,7 +558,7 @@ function DeletePostButton({ id, title }: { id: string; title: string }) {
       </summary>
       <div className="mt-1.5 flex flex-col items-end gap-1.5 rounded-lg border border-red bg-red/5 p-2.5">
         <p className="max-w-56 text-right text-sm text-brown-mid">
-          Permanently delete “{title}”? This can&apos;t be undone.
+          Permanently delete “{title}” and the submission it came from? This can&apos;t be undone.
         </p>
         <form action={deletePost}>
           <input type="hidden" name="id" value={id} />

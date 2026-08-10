@@ -229,12 +229,17 @@ export async function clearRejectedSubmissions(): Promise<void> {
 }
 
 /**
- * Delete a single post outright.
+ * Delete a single post outright, along with the submission it came from.
  *
  * Without this there is no way to remove a post from the admin panel at all —
  * only to unpublish it — so a draft nobody wants sits in the table forever.
  * Guarded to drafts: taking down something live should be a deliberate
  * Unpublish first, so it can't happen in one click.
+ *
+ * The source submission goes too. Deleting a post but leaving its submission
+ * behind strands an "Approved" row in the queue for a story that no longer
+ * exists, which is exactly the clutter this is meant to clear. The
+ * confirmation says so.
  */
 export async function deletePost(formData: FormData): Promise<void> {
   await requireAdmin("/admin/stories");
@@ -245,18 +250,58 @@ export async function deletePost(formData: FormData): Promise<void> {
   const supabase = getServiceClient();
   if (!supabase) return;
 
-  const { error } = await supabase
+  const { data: deleted, error } = await supabase
     .from("posts")
     .delete()
     .eq("id", id)
-    .eq("status", "draft");
+    .eq("status", "draft")
+    .select("submission_id")
+    .maybeSingle();
 
-  if (error) console.error("[admin] deletePost failed:", error.message);
+  if (error) {
+    console.error("[admin] deletePost failed:", error.message);
+    return;
+  }
+
+  if (deleted?.submission_id) {
+    const { error: subError } = await supabase
+      .from("blog_submissions")
+      .delete()
+      .eq("id", deleted.submission_id);
+
+    if (subError) {
+      console.error("[admin] deleting the source submission failed:", subError.message);
+    }
+  }
 
   revalidatePath("/admin/stories");
   revalidatePath("/admin");
   revalidatePath("/blog");
   revalidatePath("/");
+}
+
+/**
+ * Delete one story submission, whatever its status.
+ *
+ * The bulk clear only covers not-approved ones; this is how an approved or
+ * pending submission gets removed from the queue. Any post already built from
+ * it is left alone — that post may well be live, and it stands on its own once
+ * published.
+ */
+export async function deleteSubmission(formData: FormData): Promise<void> {
+  await requireAdmin("/admin/stories");
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const supabase = getServiceClient();
+  if (!supabase) return;
+
+  const { error } = await supabase.from("blog_submissions").delete().eq("id", id);
+  if (error) console.error("[admin] deleteSubmission failed:", error.message);
+
+  revalidatePath("/admin/stories");
+  revalidatePath("/admin");
 }
 
 /**

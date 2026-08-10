@@ -49,6 +49,20 @@ function replyHref(message: ContactMessage) {
   return `mailto:${message.email}?subject=${encodeURIComponent(subject)}`;
 }
 
+/**
+ * How long a handled message has left. The 7-day window is enforced by
+ * `purge_handled_messages()` in supabase/migrations/0003 — this only reports
+ * it, so nobody is surprised when a message disappears.
+ */
+function retentionNote(handledAt: string | null) {
+  if (!handledAt) return "handled";
+  const days = Math.floor((Date.now() - Date.parse(handledAt)) / 86_400_000);
+  const left = 7 - days;
+  if (left <= 0) return "handled — due to be cleared";
+  if (left === 1) return "handled — clears tomorrow";
+  return `handled — clears in ${left} days`;
+}
+
 export default async function AdminMessagesPage({
   searchParams,
 }: {
@@ -105,7 +119,7 @@ export default async function AdminMessagesPage({
     <div className="flex flex-col gap-6">
       <AdminPageHeader
         title="Messages"
-        description="Everything sent through the contact form. Reply from your own email, then mark it handled so the next person knows it's covered."
+        description="Everything sent through the contact form. Reply from your own email, then mark it handled so the next person knows it's covered. Handled messages are deleted automatically a week later; anything still needing a reply is kept indefinitely."
         count={messages.length}
       />
 
@@ -164,6 +178,7 @@ export default async function AdminMessagesPage({
                     {message.email}
                   </a>{" "}
                   · {topicLabel(message.topic)} · received {formatDate(message.created_at)}
+                  {message.handled ? <> · {retentionNote(message.handled_at)}</> : null}
                 </>
               }
               actions={

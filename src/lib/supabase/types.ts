@@ -71,6 +71,8 @@ export type ContactMessage = {
   subject: string | null;
   message: string;
   handled: boolean;
+  /** Set by a database trigger when `handled` flips. Drives the 7-day purge. */
+  handled_at: string | null;
 }
 
 export type SiteStats = {
@@ -136,8 +138,9 @@ export type Database = {
       };
       contact_messages: {
         Row: ContactMessage;
-        Insert: Omit<ContactMessage, "id" | "created_at" | "handled"> &
-          Partial<Pick<ContactMessage, "id" | "created_at" | "handled">>;
+        // `handled_at` is maintained by a database trigger, never written here.
+        Insert: Omit<ContactMessage, "id" | "created_at" | "handled" | "handled_at"> &
+          Partial<Pick<ContactMessage, "id" | "created_at" | "handled" | "handled_at">>;
         Update: Partial<ContactMessage>;
         Relationships: [];
       };
