@@ -24,6 +24,19 @@ If `node: command not found`, run:
 export PATH="$HOME/.local/nodejs/bin:$PATH"
 ```
 
+### Git identity — do not get this wrong
+
+Commits on this project are authored as **`Dimitri Saha <dimitri.saha@yahoo.com>`** and nothing
+else. The repo is `github.com/dimitri-saha/Hearts4Hands` and the user works through that GitHub
+account. Check before committing:
+
+```bash
+git config user.email     # must be dimitri.saha@yahoo.com
+```
+
+**Do not commit or push unless explicitly asked** — the user drives commits from GitHub Desktop.
+And never infer someone's email address from session context; ask.
+
 ---
 
 ## 2. Stack
@@ -311,7 +324,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `<textarea id="message">`, so `CharacterCount`'s `getElementById` found the section and
   crashed the whole page on `.value.length`. Anchor ids and field ids share one namespace.
 
-- **Rejection has to be enforced in three places**, not one. A not-approved submission hides its
-  publish form; `setSubmissionStatus` unpublishes any post already created from it; and the posts
-  table hides Publish/Feature for a post whose source submission was rejected (`fromRejected`).
-  Miss any of them and a story you turned down can go back on the blog.
+- **Rejection has to be enforced in four places**, not one. A not-approved submission hides its
+  publish form; `setSubmissionStatus` unpublishes any post already created from it; the posts
+  table hides Publish/Feature for a post whose source submission was rejected (`fromRejected`);
+  and deleting rejected submissions must delete their unpublished derived posts in the same
+  sweep. Miss any of them and a story you turned down can go back on the blog.
+- **`posts.submission_id` is ON DELETE SET NULL.** Deleting a submission therefore *orphans* any
+  post built from it — the post survives with a null `submission_id`, which also means
+  `fromRejected` stops flagging it and its Publish/Feature buttons come back. Both
+  `clearRejectedSubmissions` and the SQL purge in migration 0002 delete the derived draft posts
+  first, before the submissions they are identified by. Order matters.
+- **Only drafts are deletable.** `deletePost` filters on `status = 'draft'` so live content can
+  never disappear in one click — unpublish first, then delete.

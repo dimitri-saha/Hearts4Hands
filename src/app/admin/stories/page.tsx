@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import {
   clearRejectedSubmissions,
+  deletePost,
   setSubmissionStatus,
   updatePost,
 } from "@/app/actions/admin";
@@ -206,7 +207,9 @@ export default async function AdminStoriesPage({
           <div className="flex flex-col items-end gap-1.5">
             {post.status === "published" ? (
               <PostAction id={post.id} intent="unpublish" label="Unpublish" tone="quiet" />
-            ) : null}
+            ) : (
+              <DeletePostButton id={post.id} title={post.title} />
+            )}
             <span className="max-w-56 text-right text-sm text-brown-mid">
               Its story was not approved. Reset that submission to pending to publish again.
             </span>
@@ -225,6 +228,9 @@ export default async function AdminStoriesPage({
               label={post.featured ? "Un-feature" : "Feature"}
               tone="quiet"
             />
+            {post.status === "draft" ? (
+              <DeletePostButton id={post.id} title={post.title} />
+            ) : null}
           </div>
         ),
     },
@@ -293,7 +299,8 @@ export default async function AdminStoriesPage({
                     {formatNumber(rejectedTotal)} not-approved{" "}
                     {rejectedTotal === 1 ? "story" : "stories"}
                   </strong>{" "}
-                  and cannot be undone. Anything already published from them stays on the blog.
+                  and cannot be undone, along with any unpublished draft posts made from them.
+                  Anything still live on the blog is left alone.
                   Not-approved stories are also removed automatically 30 days after the decision.
                 </p>
                 <form action={clearRejectedSubmissions}>
@@ -502,6 +509,34 @@ export default async function AdminStoriesPage({
         </AdminAlert>
       </section>
     </div>
+  );
+}
+
+/**
+ * Delete a draft post. Two-step via <details> so it can't be a stray click,
+ * and works without JavaScript. Only offered for drafts — see `deletePost`.
+ */
+function DeletePostButton({ id, title }: { id: string; title: string }) {
+  return (
+    <details className="inline-block text-right">
+      <summary className="cursor-pointer list-none rounded-lg border border-brown-faint bg-paper px-3 py-1.5 font-display text-sm font-bold text-brown-mid marker:content-none hover:border-red hover:bg-blush hover:text-berry">
+        Delete
+      </summary>
+      <div className="mt-1.5 flex flex-col items-end gap-1.5 rounded-lg border border-red bg-red/5 p-2.5">
+        <p className="max-w-56 text-right text-sm text-brown-mid">
+          Permanently delete “{title}”? This can&apos;t be undone.
+        </p>
+        <form action={deletePost}>
+          <input type="hidden" name="id" value={id} />
+          <button
+            type="submit"
+            className="rounded-lg border border-red bg-red/10 px-3 py-1.5 font-display text-sm font-bold text-berry hover:bg-red/20"
+          >
+            Yes, delete it
+          </button>
+        </form>
+      </div>
+    </details>
   );
 }
 

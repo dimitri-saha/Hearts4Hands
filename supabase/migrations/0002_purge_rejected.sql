@@ -31,6 +31,19 @@ as $$
 declare
   removed integer;
 begin
+  -- Delete the unpublished posts made from these submissions first. Once the
+  -- submission row is gone, posts.submission_id is set to null (ON DELETE SET
+  -- NULL) and nothing links the draft back to a story that was turned down —
+  -- it would sit in the admin table forever, publishable again. Posts that are
+  -- currently live are left alone.
+  delete from public.posts p
+  where p.status = 'draft'
+    and p.submission_id in (
+      select s.id from public.blog_submissions s
+      where s.status = 'rejected'
+        and coalesce(s.reviewed_at, s.created_at) < now() - retain
+    );
+
   delete from public.blog_submissions
   where status = 'rejected'
     -- reviewed_at is when it was turned down; fall back to created_at for any

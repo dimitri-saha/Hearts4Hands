@@ -172,12 +172,20 @@ export async function setSubmissionStatus(formData: FormData): Promise<void> {
 }
 
 /**
- * Permanently delete every not-approved story submission.
+ * Permanently delete every not-approved story submission, plus the unpublished
+ * posts made from them.
  *
  * Deliberately hard-deletes rather than archiving: these are unpublished
  * drafts of other people's personal writing, and holding onto rejected copies
- * indefinitely is the wrong default. Any post already created from one is
- * unaffected — `posts.submission_id` is ON DELETE SET NULL.
+ * indefinitely is the wrong default.
+ *
+ * The derived posts have to go in the same sweep. `posts.submission_id` is
+ * ON DELETE SET NULL, so deleting only the submission leaves an orphaned draft
+ * sitting in the posts table — and once its `submission_id` is null, nothing
+ * marks it as coming from a rejected story, so the Publish and Feature buttons
+ * come back. A post that is currently published is left alone rather than
+ * yanked out from under readers; rejecting already unpublishes, so that only
+ * happens if someone re-published it by hand.
  */
 export async function clearRejectedSubmissions(): Promise<void> {
   await requireAdmin("/admin/stories");
@@ -185,12 +193,70 @@ export async function clearRejectedSubmissions(): Promise<void> {
   const supabase = getServiceClient();
   if (!supabase) return;
 
-  const { error } = await supabase.from("blog_submissions").delete().eq("status", "rejected");
+  const { data: rejected, error: lookupError } = await supabase
+    .from("blog_submissions")
+    .select("id")
+    .eq("status", "rejected");
 
+  if (lookupError) {
+    console.error("[admin] clearRejectedSubmissions lookup failed:", lookupError.message);
+    return;
+  }
+
+  const ids = (rejected ?? []).map((row) => row.id);
+  if (ids.length === 0) return;
+
+  // Drafts first: once the submissions are gone we can no longer tell which
+  // posts came from them.
+  const { error: postError } = await supabase
+    .from("posts")
+    .delete()
+    .in("submission_id", ids)
+    .eq("status", "draft");
+
+  if (postError) {
+    console.error("[admin] clearing derived draft posts failed:", postError.message);
+    return;
+  }
+
+  const { error } = await supabase.from("blog_submissions").delete().eq("status", "rejected");
   if (error) console.error("[admin] clearRejectedSubmissions failed:", error.message);
 
   revalidatePath("/admin/stories");
   revalidatePath("/admin");
+  revalidatePath("/blog");
+  revalidatePath("/");
+}
+
+/**
+ * Delete a single post outright.
+ *
+ * Without this there is no way to remove a post from the admin panel at all —
+ * only to unpublish it — so a draft nobody wants sits in the table forever.
+ * Guarded to drafts: taking down something live should be a deliberate
+ * Unpublish first, so it can't happen in one click.
+ */
+export async function deletePost(formData: FormData): Promise<void> {
+  await requireAdmin("/admin/stories");
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const supabase = getServiceClient();
+  if (!supabase) return;
+
+  const { error } = await supabase
+    .from("posts")
+    .delete()
+    .eq("id", id)
+    .eq("status", "draft");
+
+  if (error) console.error("[admin] deletePost failed:", error.message);
+
+  revalidatePath("/admin/stories");
+  revalidatePath("/admin");
+  revalidatePath("/blog");
+  revalidatePath("/");
 }
 
 /**
