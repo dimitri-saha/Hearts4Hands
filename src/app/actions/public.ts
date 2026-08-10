@@ -240,7 +240,7 @@ export async function submitBlogPost(
     );
   }
 
-  await Promise.allSettled([
+  const [confirmation] = await Promise.allSettled([
     sendEmail({
       to: data.authorEmail,
       subject: `We received your story: ${data.title}`,
@@ -257,7 +257,17 @@ export async function submitBlogPost(
     ),
   ]);
 
-  return successState("Your story is with our editors. Thank you for trusting us with it.");
+  // Same reasoning as the volunteer action: only mention the email if one sent.
+  const emailed = confirmation.status === "fulfilled" && confirmation.value;
+
+  return successState(
+    [
+      "Your story is with our editors. Thank you for trusting us with it.",
+      emailed ? "A confirmation is on its way to your inbox." : null,
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
 }
 
 // ---------------------------------------------------------------------------

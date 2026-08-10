@@ -20,7 +20,12 @@ import {
   Select,
   Textarea,
 } from "@/components/ui/Field";
-import { AntiSpamFields, FileField, SubmitButton } from "@/components/ui/FormBits";
+import {
+  AntiSpamFields,
+  FileField,
+  SubmitButton,
+  useFormAttempt,
+} from "@/components/ui/FormBits";
 import { Squiggle } from "@/components/illustrations/Doodles";
 
 const ageGroups = [
@@ -141,6 +146,10 @@ function HoursBlock({
 export function VolunteerForm() {
   const [state, formAction] = useActionState(submitVolunteer, idleState);
   const alertRef = useRef<HTMLDivElement>(null);
+  // Remounts <select>/checkboxes after a failed submit so the age group,
+  // chosen activities, and consent tick survive — see useFormAttempt.
+  // Must sit above the success early-return: hooks run unconditionally.
+  const attempt = useFormAttempt(state);
 
   // Move focus to the form-level error so it can't be missed on a phone, where
   // the top of a long form is well off-screen by the time you hit submit.
@@ -244,6 +253,7 @@ export function VolunteerForm() {
 
         <Field label="Age group" htmlFor="ageGroup" error={errors?.ageGroup}>
           <Select
+            key={`ageGroup-${attempt}`}
             id="ageGroup"
             name="ageGroup"
             defaultValue={valueOf(state, "ageGroup")}
@@ -325,7 +335,7 @@ export function VolunteerForm() {
         >
           {volunteerActivities.map((activity) => (
             <CheckboxRow
-              key={activity.value}
+              key={`${activity.value}-${attempt}`}
               id={`activity-${activity.value}`}
               name="activities"
               value={activity.value}
@@ -400,6 +410,7 @@ export function VolunteerForm() {
         </Field>
 
         <CheckboxRow
+          key={`consent-${attempt}`}
           id="consent"
           name="consent"
           label="Everything here is accurate, and you can email me about it."

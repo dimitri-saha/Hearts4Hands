@@ -194,6 +194,38 @@ export function FileField({
   );
 }
 
+/**
+ * A counter that increments every time a server action returns.
+ *
+ * React resets a form once its action completes. Text inputs come back
+ * because React also updates their `defaultValue`, and the reset restores
+ * *that* — but `<select>` and checkboxes reset to their markup state, which
+ * has no selection, so a user's category or ticked consent box silently
+ * vanishes on a failed submit.
+ *
+ * Use the returned number as a `key` on those fields so they remount with the
+ * echoed values from `state.values`:
+ *
+ *   <Select key={`category-${attempt}`} defaultValue={valueOf(state, "category")} … />
+ *
+ * Keying on the value alone isn't enough — two failed submits in a row with
+ * the same category wouldn't change the key, and the field would stay blank
+ * the second time.
+ */
+export function useFormAttempt(state: unknown) {
+  const [attempt, setAttempt] = useState(0);
+  const [seen, setSeen] = useState(state);
+
+  // Adjusting state during render (rather than in an effect) means the remount
+  // happens in the same commit as the error, with no blank frame in between.
+  if (seen !== state) {
+    setSeen(state);
+    setAttempt((n) => n + 1);
+  }
+
+  return attempt;
+}
+
 /** Live character counter for long-form fields. */
 export function CharacterCount({
   targetId,

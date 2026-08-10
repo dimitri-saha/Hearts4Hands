@@ -8,7 +8,12 @@ import { blogCategories, contact } from "@/lib/site";
 import { Button } from "@/components/ui/Button";
 import { CheckboxRow, Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { Alert, SuccessPanel } from "@/components/ui/Feedback";
-import { AntiSpamFields, CharacterCount, SubmitButton } from "@/components/ui/FormBits";
+import {
+  AntiSpamFields,
+  CharacterCount,
+  SubmitButton,
+  useFormAttempt,
+} from "@/components/ui/FormBits";
 
 /**
  * The story submission form.
@@ -57,6 +62,9 @@ function setValue(el: HTMLInputElement | HTMLTextAreaElement | null, value: stri
 export function SubmitForm() {
   const [state, formAction] = useActionState(submitBlogPost, idleState);
   const [category, setCategory] = useState(() => valueOf(state, "category"));
+  // Remounts <select>/checkboxes after a failed submit so they keep their
+  // values — see useFormAttempt.
+  const attempt = useFormAttempt(state);
   const [restoredAt, setRestoredAt] = useState<number | null>(null);
   const alertRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<number | null>(null);
@@ -135,10 +143,12 @@ export function SubmitForm() {
     return (
       <SuccessPanel title="Your story is on its way">
         <p>{state.message}</p>
+        {/* No unconditional "you'll get an email" — sending depends on
+            RESEND_API_KEY, so the action puts that line in `state.message`
+            only when the confirmation actually went out. */}
         <p className="mt-3">
-          You&apos;ll get an email confirming we have it. When an editor has read it, we&apos;ll
-          write back with any suggested edits — and we won&apos;t publish anything until you say
-          yes.
+          When an editor has read it, we&apos;ll write back with any suggested edits — and we
+          won&apos;t publish anything until you say yes.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Button href="/blog" variant="primary">
@@ -224,6 +234,7 @@ export function SubmitForm() {
         hint={selected ? selected.blurb : "Pick the one that fits best — we can change it later."}
       >
         <Select
+          key={`category-${attempt}`}
           id="category"
           name="category"
           defaultValue={valueOf(state, "category")}
@@ -337,9 +348,11 @@ export function SubmitForm() {
       </Field>
 
       <CheckboxRow
+        key={`consent-${attempt}`}
         id="consent"
         name="consent"
         value="on"
+        defaultChecked={valueOf(state, "consent") === "on"}
         label="Yes — send this to an editor"
         hint="This is my own writing. I'm OK with an editor reading it and lightly editing it for clarity, and I understand nothing gets published until I say yes."
         error={state.errors?.consent}

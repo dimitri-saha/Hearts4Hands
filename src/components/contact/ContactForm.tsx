@@ -9,7 +9,12 @@ import { contact } from "@/lib/site";
 import { contactTopics } from "@/lib/validation";
 import { Alert, SuccessPanel } from "@/components/ui/Feedback";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
-import { AntiSpamFields, CharacterCount, SubmitButton } from "@/components/ui/FormBits";
+import {
+  AntiSpamFields,
+  CharacterCount,
+  SubmitButton,
+  useFormAttempt,
+} from "@/components/ui/FormBits";
 
 /**
  * The contact form.
@@ -23,6 +28,8 @@ import { AntiSpamFields, CharacterCount, SubmitButton } from "@/components/ui/Fo
 export function ContactForm() {
   const [state, action] = useActionState(submitContact, idleState);
   const alertRef = useRef<HTMLDivElement>(null);
+  // Keeps the chosen topic after a failed submit — see useFormAttempt.
+  const attempt = useFormAttempt(state);
 
   // Send focus to the form-level error so a keyboard or screen-reader user
   // isn't left at the bottom of the form wondering what happened.
@@ -96,6 +103,7 @@ export function ContactForm() {
         required
       >
         <Select
+          key={`topic-${attempt}`}
           id="topic"
           name="topic"
           hint
