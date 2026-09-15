@@ -6,11 +6,19 @@ import type { BlogSubmission, Group, GroupRole, Post, VolunteerSignup } from "./
 /**
  * Everything the volunteer dashboard reads.
  *
- * All of it goes through the *session* client, not the service role — so
- * row-level security decides what comes back. If the "own rows only" policies
- * were ever wrong, these queries would return nothing rather than somebody
- * else's volunteering. The service role is used in exactly one place (the club
- * roster), where it's paired with an explicit leadership check.
+ * Two rules, and the second was learned the hard way:
+ *
+ *   1. Go through the *session* client, not the service role, so row-level
+ *      security is doing the work rather than being bypassed.
+ *   2. **Still filter by user_id explicitly.** RLS policies are OR'd together,
+ *      and `volunteer_signups` carries both "read your own rows" and "admins
+ *      read everything". An admin using their own volunteer account therefore
+ *      passed the admin policy and saw every volunteer's hours totalled up as
+ *      their own. RLS is the backstop; the query still has to say what it
+ *      means.
+ *
+ * The service role is used in two places only — the club roster and the
+ * public impact counts — each paired with its own explicit check.
  */
 
 export type HourEntry = VolunteerSignup;
@@ -34,13 +42,14 @@ export type Membership = {
   memberCount: number;
 };
 
-export async function getMyHourEntries(): Promise<HourEntry[]> {
+export async function getMyHourEntries(userId: string): Promise<HourEntry[]> {
   const supabase = await getSessionClient();
   if (!supabase) return [];
 
   const { data, error } = await supabase
     .from("volunteer_signups")
     .select("*")
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -87,13 +96,14 @@ export function totalsFor(entries: HourEntry[]): AccountTotals {
  * ones are deleted 30 days after the decision, and a dashboard that shows
  * something due to vanish is worse than one that never showed it.
  */
-export async function getMyPublishedStories(): Promise<PublishedStory[]> {
+export async function getMyPublishedStories(userId: string): Promise<PublishedStory[]> {
   const supabase = await getSessionClient();
   if (!supabase) return [];
 
   const { data: submissions, error } = await supabase
     .from("blog_submissions")
     .select("published_post_id")
+    .eq("user_id", userId)
     .eq("status", "approved")
     .not("published_post_id", "is", null);
 
@@ -120,13 +130,14 @@ export async function getMyPublishedStories(): Promise<PublishedStory[]> {
 }
 
 /** Pending or not-approved submissions, as a count only — see the note above. */
-export async function getMyStoriesInReview(): Promise<number> {
+export async function getMyStoriesInReview(userId: string): Promise<number> {
   const supabase = await getSessionClient();
   if (!supabase) return 0;
 
   const { count, error } = await supabase
     .from("blog_submissions")
     .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
     .eq("status", "pending");
 
   if (error) {

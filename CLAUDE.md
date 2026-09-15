@@ -389,3 +389,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **An hour entry is stamped with its club at logging time** (`volunteer_signups.group_id`), not
   attributed by current membership. Joining a club never retroactively claims earlier work, and
   leaving never strips it away.
+- **RLS is a backstop, not a filter.** Policies are OR'd together, and most tables carry both
+  "read your own rows" and `is_admin()`. A dashboard query that omitted `.eq("user_id", …)` and
+  leaned on RLS therefore returned *every* volunteer's hours to any admin using their own
+  volunteer account — totalled up as theirs. Every query in `lib/account-data.ts` states its own
+  scope explicitly; RLS is there to catch the case where one forgets, not to do the scoping.

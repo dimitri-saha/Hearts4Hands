@@ -33,9 +33,9 @@ export default async function AccountPage() {
   const guardian = isGuardianAccount(volunteer);
 
   const [entries, stories, inReview, groups] = await Promise.all([
-    getMyHourEntries(),
-    getMyPublishedStories(),
-    getMyStoriesInReview(),
+    getMyHourEntries(volunteer.id),
+    getMyPublishedStories(volunteer.id),
+    getMyStoriesInReview(volunteer.id),
     getMyGroups(volunteer.id),
   ]);
 
