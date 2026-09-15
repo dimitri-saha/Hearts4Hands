@@ -1,7 +1,13 @@
+import Image from "next/image";
 import Link from "next/link";
 
-import { Bear } from "@/components/illustrations/Bear";
-import { Cloud, CurvedArrow, Sparkle, Star, Tape } from "@/components/illustrations/Doodles";
+import {
+  Cloud,
+  CurvedArrow,
+  Sparkle,
+  Star,
+  Tape,
+} from "@/components/illustrations/Doodles";
 import { Button } from "@/components/ui/Button";
 import { Section } from "@/components/ui/Section";
 
@@ -34,9 +40,10 @@ export function Hero() {
           </h1>
 
           <p className="mt-5 text-lg text-brown-mid sm:text-xl">
-            We are students who draw cards for kids in hospitals, then mail them out. We publish
-            stories from people living with cancer and the people caring for them. And the money we
-            raise buys paper, postage, and cancer research.
+            We are students who draw cards for kids in hospitals, then mail them
+            out. We publish stories from people living with cancer and the
+            people caring for them. And the money we raise buys paper, postage,
+            and cancer research.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3 md:justify-start">
@@ -78,9 +85,15 @@ export function Hero() {
             color="#f2c14e"
             className="pointer-events-none absolute right-1 bottom-12 h-6 w-6 opacity-90 sm:-right-2"
           />
-          <Bear
-            title="The Hearts4Hands bear, waving"
-            className="h-60 w-42 animate-float sm:h-72 sm:w-52 lg:h-[21rem] lg:w-60"
+          {/* w-auto, not a fixed width: the artwork is 397x608 and pinning
+              both axes to the old SVG's box would squash it. */}
+          <Image
+            src="/bears/bear_logo.png"
+            alt="The Hearts4Hands bear, waving"
+            width={397}
+            height={608}
+            priority
+            className="h-60 w-auto animate-float sm:h-72 lg:h-[21rem]"
             style={{ ["--tilt" as string]: "-3deg" }}
           />
         </div>

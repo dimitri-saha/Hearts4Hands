@@ -219,8 +219,14 @@ should be able to work almost entirely in there. Put new constants there, not in
   fields; decorative SVGs `aria-hidden`; focus-visible ring is a 3px dashed red outline defined
   globally — don't remove it. Body text must stay on `paper`/`cream`/`blush`, never on `pink-deep`
   or `red` (contrast).
-- **Images**: `next/image` for raster. `public/logo.jpeg` is the original logo. The header uses the
-  redrawn SVG `BearHead`, not the JPEG (the JPEG has a baked-in pink square).
+- **Images**: `next/image` for raster. The brand artwork is the painted bear in `public/bears/`
+  — `bear_sit` (header), `bear_logo` (home hero), `bear_card` (home closing CTA), plus
+  `bear_turn`, `bear_sit_angle` and `collage` which are unused so far. **Every PNG there has had
+  its transparent padding trimmed**, so the artwork fills its own box and CSS sizing is
+  predictable; the untrimmed 512x512 originals rendered as a tiny bear adrift in a large empty
+  square. Size them with a height and `w-auto` — the three are different aspect ratios, so pinning
+  both axes squashes them. `public/logo.jpeg` is the full logo (bear + wordmark on pink).
+  The `Bear`/`BearHead` SVGs are still used by `/admin`, the volunteer auth pages and the 404.
 
 ---
 
