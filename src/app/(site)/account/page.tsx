@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { deleteMyHourEntry } from "@/app/actions/account";
+
 import {
   getMyGroups,
   getMyHourEntries,
@@ -7,7 +9,7 @@ import {
   getMyStoriesInReview,
   totalsFor,
 } from "@/lib/account-data";
-import { categoryLabel } from "@/lib/site";
+import { categoryLabel, contact } from "@/lib/site";
 import { formatDate, formatNumber } from "@/lib/utils";
 import { isGuardianAccount, requireVolunteer, volunteerName } from "@/lib/volunteer-auth";
 import { Button } from "@/components/ui/Button";
@@ -161,6 +163,40 @@ export default async function AccountPage() {
                         "No reason was recorded. Email us and we'll explain — it's usually something small."}
                     </p>
                   ) : null}
+
+                  {/* Approved entries aren't deletable here: they've been
+                      checked by a person and count toward the public totals.
+                      See deleteMyHourEntry. */}
+                  {entry.status === "approved" ? (
+                    <p className="mt-3 text-sm text-brown-soft">
+                      Counted. If this one is wrong,{" "}
+                      <a className={linkClass} href={`mailto:${contact.general}?subject=${encodeURIComponent("Correction to my logged hours")}`}>
+                        email us
+                      </a>{" "}
+                      and we&apos;ll fix it.
+                    </p>
+                  ) : (
+                    <details className="mt-3 inline-block">
+                      <summary className="cursor-pointer list-none rounded-lg border border-brown-faint bg-paper px-3 py-1.5 font-display text-sm font-bold text-brown-mid marker:content-none hover:border-red hover:text-berry">
+                        Delete this entry
+                      </summary>
+                      <div className="mt-2 flex flex-col items-start gap-2 rounded-lg border border-red bg-red/5 p-3">
+                        <p className="max-w-sm text-sm text-brown-mid">
+                          Permanently delete this entry{entry.proof_path ? ", and the photo with it" : ""}? This
+                          can&apos;t be undone.
+                        </p>
+                        <form action={deleteMyHourEntry}>
+                          <input type="hidden" name="id" value={entry.id} />
+                          <button
+                            type="submit"
+                            className="rounded-lg border border-red bg-red/10 px-3 py-1.5 font-display text-sm font-bold text-berry hover:bg-red/20"
+                          >
+                            Yes, delete it
+                          </button>
+                        </form>
+                      </div>
+                    </details>
+                  )}
                 </Card>
               );
             })}

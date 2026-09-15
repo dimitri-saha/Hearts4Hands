@@ -200,6 +200,13 @@ export default async function AdminVolunteersPage({
         ]}
       />
 
+      <p className="text-sm text-brown-mid">
+        Approving moves an entry out of the default view — switch to{" "}
+        <strong className="font-display text-berry">Approved</strong> to find it again. Every
+        decision is reversible: an approved entry can be rejected or reset to pending, and the
+        public totals follow within minutes.
+      </p>
+
       {loadError ? (
         <AdminAlert tone="error" title="Couldn't load everything">
           <p>

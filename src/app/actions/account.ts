@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { errorState, successState, type ActionState } from "@/lib/action-state";
 import { notifyTeam } from "@/lib/email";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
-import { UNDER_13, site } from "@/lib/site";
+import { contact as contactInfo, UNDER_13, site } from "@/lib/site";
 import { getServiceClient, getSessionClient } from "@/lib/supabase/server";
 import {
   fieldErrors,
@@ -89,7 +89,7 @@ export async function signUpVolunteer(
     console.error("[account] signUp failed:", error.message);
     return errorState(
       /rate|limit/i.test(error.message)
-        ? "Too many sign-up emails have gone out just now. Please try again shortly."
+        ? `Our email service is busy right now, so we couldn't send your confirmation link. Please try again in a few minutes — or email ${contactInfo.general} and we'll set your account up by hand.`
         : "We couldn't create that account. Please check the address and try again.",
     );
   }
@@ -701,4 +701,126 @@ export async function setGroupArchived(formData: FormData): Promise<void> {
   await admin.from("groups").update({ archived }).eq("id", groupId);
   revalidatePath("/account/groups");
   revalidatePath("/account");
+}
+
+/**
+ * A volunteer deletes one of their own hour entries.
+ *
+ * Only while it's pending or not approved. An approved entry has been checked
+ * by a person, counts toward the public totals, and is the unit a certificate
+ * will eventually be issued against — letting it vanish silently would undo
+ * someone's review and, once certificates exist, break the guarantee that each
+ * hour is counted exactly once. Those go through us instead, which is what
+ * /privacy already promises.
+ *
+ * The uploaded photo is removed too. Deleting the row alone would strand the
+ * file in storage forever with nothing pointing at it.
+ */
+export async function deleteMyHourEntry(formData: FormData): Promise<void> {
+  const { requireVolunteer } = await import("@/lib/volunteer-auth");
+  const { PROOF_BUCKET } = await import("@/lib/supabase/types");
+
+  const volunteer = await requireVolunteer("/account");
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const admin = getServiceClient();
+  if (!admin) return;
+
+  // Ownership and status are both re-checked here rather than trusted from the
+  // page that rendered the button.
+  const { data: entry } = await admin
+    .from("volunteer_signups")
+    .select("id, user_id, status, proof_path")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!entry || entry.user_id !== volunteer.id || entry.status === "approved") return;
+
+  if (entry.proof_path) {
+    const { error: fileError } = await admin.storage
+      .from(PROOF_BUCKET)
+      .remove([entry.proof_path]);
+    if (fileError) {
+      console.error("[account] proof delete failed:", fileError.message);
+    }
+  }
+
+  const { error } = await admin.from("volunteer_signups").delete().eq("id", id);
+  if (error) console.error("[account] deleteMyHourEntry failed:", error.message);
+
+  revalidatePath("/account");
+}
+
+/**
+ * Fill in a missing profile.
+ *
+ * Accounts made outside the sign-up flow — an admin created by hand in the
+ * Supabase dashboard, say — have an auth user but no profile row, because only
+ * signUpVolunteer writes one. Such an account can still sign in and log hours,
+ * and those hours land as "Unknown" with no age bracket, which would later be
+ * the name printed on a certificate.
+ *
+ * Rather than let that happen, the account area shows this form until a profile
+ * exists, and completing it backfills any entries already logged.
+ */
+export async function completeProfile(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { requireVolunteer } = await import("@/lib/volunteer-auth");
+  const { signUpSchema } = await import("@/lib/validation");
+
+  const volunteer = await requireVolunteer("/account");
+
+  // Reuse the sign-up rules for the fields they share; credentials already exist.
+  const parsed = signUpSchema
+    .pick({ fullName: true, ageGroup: true, country: true })
+    .safeParse({
+      fullName: formData.get("fullName") ?? "",
+      ageGroup: formData.get("ageGroup") ?? "",
+      country: formData.get("country") ?? "",
+    });
+
+  if (!parsed.success) {
+    return errorState("Please check the highlighted fields.", fieldErrors(parsed.error));
+  }
+
+  const admin = getServiceClient();
+  if (!admin) return errorState(UNCONFIGURED);
+
+  const data = parsed.data;
+  const isGuardian = data.ageGroup === UNDER_13;
+
+  const { error } = await admin.from("profiles").upsert(
+    {
+      user_id: volunteer.id,
+      full_name: data.fullName,
+      age_group: data.ageGroup,
+      country: data.country,
+      is_guardian_account: isGuardian,
+      terms_accepted_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
+
+  if (error) {
+    console.error("[account] completeProfile failed:", error.message);
+    return errorState("Couldn't save that. Please try again.");
+  }
+
+  // Backfill anything logged before the profile existed, so an old entry
+  // doesn't keep saying "Unknown" forever.
+  const { error: backfillError } = await admin
+    .from("volunteer_signups")
+    .update({ full_name: data.fullName, country: data.country, age_group: data.ageGroup })
+    .eq("user_id", volunteer.id)
+    .eq("full_name", "Unknown");
+
+  if (backfillError) {
+    console.error("[account] backfill failed:", backfillError.message);
+  }
+
+  revalidatePath("/account", "layout");
+  return successState("Thanks — that's your account set up.");
 }
