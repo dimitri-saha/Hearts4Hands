@@ -244,90 +244,9 @@ export default async function AdminVolunteersPage({
         </p>
       </section>
 
-      {/* --- Approved hours per volunteer ---------------------------------- */}
-      <AdminCard
-        title="Approved hours by volunteer"
-        description="What each person has banked, counting approved entries only. This is the figure a certificate is issued against."
-      >
-        {approvedTotals.length === 0 ? (
-          <p className="text-[0.95rem] text-brown-mid">
-            No approved hours yet. Approve an entry above and it will show up here.
-          </p>
-        ) : (
-          <ul className="flex list-none flex-col gap-2">
-            {approvedTotals.map((v) => (
-              <li
-                key={v.email}
-                className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-brown-faint/60 pb-2 last:border-b-0 last:pb-0"
-              >
-                <span className="font-display font-bold text-berry">
-                  {v.name}{" "}
-                  <a
-                    href={`mailto:${v.email}`}
-                    className="font-body text-sm font-normal text-brown-mid underline decoration-brown-faint underline-offset-2"
-                  >
-                    {v.email}
-                  </a>
-                </span>
-                <span className="text-[0.95rem] text-brown tabular-nums">
-                  {formatNumber(Math.round(v.hours * 10) / 10)} approved hours
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-        <p className="mt-4 border-t border-brown-faint/70 pt-3 text-sm text-brown-mid">
-          These are the hours volunteers entered themselves, as approved on this page. Pending and
-          not-approved entries are excluded.
-        </p>
-      </AdminCard>
-
-      {/* --- Clubs ----------------------------------------------------------- */}
-      <AdminCard
-        title="Clubs"
-        description="School clubs and groups. Totals count approved entries logged against the club."
-      >
-        {clubs.length === 0 ? (
-          <p className="text-[0.95rem] text-brown-mid">
-            No clubs yet. Volunteers create them from their own account.
-          </p>
-        ) : (
-          <ul className="flex list-none flex-col gap-2">
-            {clubs.map((c) => (
-              <li
-                key={c.id}
-                className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-brown-faint/60 pb-2 last:border-b-0 last:pb-0"
-              >
-                <span className="font-display font-bold text-berry">
-                  {c.name}
-                  {c.organisation ? (
-                    <span className="font-body text-sm font-normal text-brown-mid">
-                      {" "}
-                      · {c.organisation}
-                    </span>
-                  ) : null}
-                  <span className="ml-2 font-mono text-xs text-brown-soft">{c.invite_code}</span>
-                </span>
-                <span className="text-[0.95rem] text-brown tabular-nums">
-                  {formatNumber(c.members)} {c.members === 1 ? "member" : "members"} ·{" "}
-                  {formatNumber(c.hours)} h · {formatNumber(c.cards)} cards
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </AdminCard>
-
-      {/* --- Export note ----------------------------------------------------- */}
-      <AdminAlert tone="note" title="Need a spreadsheet?">
-        <p>
-          There&apos;s no download button here on purpose. Open your Supabase project → Table Editor
-          → <span className="font-bold">volunteer_signups</span> → Export → Download as CSV. That
-          gives you every column, including the ones this page summarises, which is what the award
-          paperwork wants.
-        </p>
-      </AdminAlert>
-
+      {/* The review queue comes first: the cards below summarise the same
+          people and reading as rows you can act on, which made the real
+          controls easy to miss when they sat underneath. */}
       {/* --- The queue -------------------------------------------------------- */}
       <section aria-labelledby="queue-heading" className="flex flex-col gap-3">
         <h2 id="queue-heading" className="font-display text-xl font-bold text-berry">
@@ -515,6 +434,91 @@ export default async function AdminVolunteersPage({
           </AdminList>
         )}
       </section>
+
+      {/* --- Approved hours per volunteer ---------------------------------- */}
+      <AdminCard
+        title="Approved hours by volunteer"
+        description="What each person has banked, counting approved entries only. This is the figure a certificate is issued against."
+      >
+        {approvedTotals.length === 0 ? (
+          <p className="text-[0.95rem] text-brown-mid">
+            No approved hours yet. Approve an entry above and it will show up here.
+          </p>
+        ) : (
+          <ul className="flex list-none flex-col gap-2">
+            {approvedTotals.map((v) => (
+              <li
+                key={v.email}
+                className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-brown-faint/60 pb-2 last:border-b-0 last:pb-0"
+              >
+                <span className="font-display font-bold text-berry">
+                  {v.name}{" "}
+                  <a
+                    href={`mailto:${v.email}`}
+                    className="font-body text-sm font-normal text-brown-mid underline decoration-brown-faint underline-offset-2"
+                  >
+                    {v.email}
+                  </a>
+                </span>
+                <span className="text-[0.95rem] text-brown tabular-nums">
+                  {formatNumber(Math.round(v.hours * 10) / 10)} approved hours
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-4 border-t border-brown-faint/70 pt-3 text-sm text-brown-mid">
+          These are the hours volunteers entered themselves, as approved on this page. Pending and
+          not-approved entries are excluded.
+        </p>
+      </AdminCard>
+
+      {/* --- Clubs ----------------------------------------------------------- */}
+      <AdminCard
+        title="Clubs"
+        description="School clubs and groups. Totals count approved entries logged against the club."
+      >
+        {clubs.length === 0 ? (
+          <p className="text-[0.95rem] text-brown-mid">
+            No clubs yet. Volunteers create them from their own account.
+          </p>
+        ) : (
+          <ul className="flex list-none flex-col gap-2">
+            {clubs.map((c) => (
+              <li
+                key={c.id}
+                className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-brown-faint/60 pb-2 last:border-b-0 last:pb-0"
+              >
+                <span className="font-display font-bold text-berry">
+                  {c.name}
+                  {c.organisation ? (
+                    <span className="font-body text-sm font-normal text-brown-mid">
+                      {" "}
+                      · {c.organisation}
+                    </span>
+                  ) : null}
+                  <span className="ml-2 font-mono text-xs text-brown-soft">{c.invite_code}</span>
+                </span>
+                <span className="text-[0.95rem] text-brown tabular-nums">
+                  {formatNumber(c.members)} {c.members === 1 ? "member" : "members"} ·{" "}
+                  {formatNumber(c.hours)} h · {formatNumber(c.cards)} cards
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </AdminCard>
+
+      {/* --- Export note ----------------------------------------------------- */}
+      <AdminAlert tone="note" title="Need a spreadsheet?">
+        <p>
+          There&apos;s no download button here on purpose. Open your Supabase project → Table Editor
+          → <span className="font-bold">volunteer_signups</span> → Export → Download as CSV. That
+          gives you every column, including the ones this page summarises, which is what the award
+          paperwork wants.
+        </p>
+      </AdminAlert>
+
     </div>
   );
 }
