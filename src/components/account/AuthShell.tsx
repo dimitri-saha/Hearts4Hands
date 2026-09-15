@@ -1,8 +1,8 @@
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
-import { BearHead } from "@/components/illustrations/Bear";
 import { Section } from "@/components/ui/Section";
 
 /**
@@ -28,9 +28,19 @@ export function AuthShell({
   className?: string;
 }) {
   return (
-    <Section tone="blush" width="prose" className={cn("py-14 sm:py-20", className)}>
+    <Section
+      tone="blush"
+      width="prose"
+      className={cn("py-14 sm:py-20", className)}
+    >
       <div className="mx-auto flex max-w-lg flex-col items-center text-center">
-        <BearHead className="h-14 w-16" />
+        <Image
+          src="/bears/bear_sit_angle.png"
+          alt=""
+          width={297}
+          height={346}
+          className="h-28 w-auto"
+        />
         {eyebrow ? (
           <p className="mt-3 font-hand text-lg tracking-[0.16em] text-red-deep uppercase">
             {eyebrow}
@@ -40,12 +50,18 @@ export function AuthShell({
         {intro ? <p className="mt-3 text-brown-mid">{intro}</p> : null}
       </div>
 
-      <Card tone="paper" seed={title} className="mx-auto mt-8 max-w-lg px-5 py-7 sm:px-8 sm:py-9">
+      <Card
+        tone="paper"
+        seed={title}
+        className="mx-auto mt-8 max-w-lg px-5 py-7 sm:px-8 sm:py-9"
+      >
         {children}
       </Card>
 
       {footer ? (
-        <div className="mx-auto mt-6 max-w-lg text-center text-brown-mid">{footer}</div>
+        <div className="mx-auto mt-6 max-w-lg text-center text-brown-mid">
+          {footer}
+        </div>
       ) : null}
     </Section>
   );

@@ -1,10 +1,10 @@
+import Image from "next/image";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { signOut } from "@/app/actions/admin";
 import { getAdminUser } from "@/lib/auth";
 import { AdminNav, type AdminNavItem } from "@/components/admin/AdminNav";
-import { BearHead } from "@/components/illustrations/Bear";
 
 /**
  * The editor workspace — PRD §5.4 (review and publish submissions) and §5.2
@@ -32,7 +32,11 @@ const navItems: AdminNavItem[] = [
   { href: "/", label: "View site ↗", separated: true },
 ];
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   // Deliberately NOT requireAdmin(): the login page lives under /admin/login,
   // and guarding the whole segment here would redirect it to itself. Each
   // protected page calls requireAdmin() for its own route.
@@ -51,7 +55,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             className="flex items-center gap-2 no-underline"
             aria-label="Hearts4Hands admin — overview"
           >
-            <BearHead className="h-8 w-9 shrink-0" />
+            <Image
+              src="/bears/bear_sit.png"
+              alt=""
+              width={312}
+              height={310}
+              className="h-8 w-8 shrink-0 object-contain"
+            />
             <span className="font-hand text-xl leading-none text-red-deep">
               hearts4hands <span className="text-brown-mid">admin</span>
             </span>
@@ -60,7 +70,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="flex items-center gap-3">
             {user.email ? (
               <span className="hidden max-w-[16rem] truncate text-sm text-brown-mid sm:inline">
-                Signed in as <span className="font-bold text-brown">{user.email}</span>
+                Signed in as{" "}
+                <span className="font-bold text-brown">{user.email}</span>
               </span>
             ) : null}
             <form action={signOut}>

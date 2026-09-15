@@ -226,7 +226,17 @@ should be able to work almost entirely in there. Put new constants there, not in
   predictable; the untrimmed 512x512 originals rendered as a tiny bear adrift in a large empty
   square. Size them with a height and `w-auto` — the three are different aspect ratios, so pinning
   both axes squashes them. `public/logo.jpeg` is the full logo (bear + wordmark on pink).
-  The `Bear`/`BearHead` SVGs are still used by `/admin`, the volunteer auth pages and the 404.
+  `bear_face.png` is a head crop of `bear_sit`, cut for the icons — a whole sitting bear is
+  unreadable at 32px. Its flat bottom edge is invisible inside a rounded icon frame but reads as
+  a hard cut when it floats on a background, which is why the OG card uses the whole bear instead.
+- **The favicon is `src/app/icon.png`, not an SVG.** `apple-icon.tsx` and `opengraph-image.tsx`
+  read their artwork off disk at module scope; both routes are prerendered by `next build`, so
+  the file is there when it runs and nothing hits the filesystem at request time. Check they are
+  still `○ (Static)` in the build output if you touch them.
+- **`Bear` and `BearHead` in `illustrations/Bear.tsx` are now unused** — every bear on the site
+  is the painted artwork. They're kept because the drawing language in that file is the reference
+  for any new illustration, but don't reach for them: a drawn bear next to a painted one looks
+  like a mistake.
 
 ---
 

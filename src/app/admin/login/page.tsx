@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -6,7 +7,6 @@ import type { ReactNode } from "react";
 import { getAdminUser } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { LoginForm } from "@/components/admin/LoginForm";
-import { BearHead } from "@/components/illustrations/Bear";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -26,7 +26,8 @@ export default async function AdminLoginPage({
   const params = await searchParams;
   const raw = Array.isArray(params.next) ? params.next[0] : params.next;
   // Only same-origin relative paths — mirrors the check inside `signIn`.
-  const next = raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/admin";
+  const next =
+    raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/admin";
 
   // Already signed in? Skip the form.
   if (isSupabaseConfigured) {
@@ -38,7 +39,13 @@ export default async function AdminLoginPage({
     <div className="flex min-h-dvh items-start justify-center bg-paper-deep px-4 py-12 sm:py-16">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center text-center">
-          <BearHead className="h-14 w-16" />
+          <Image
+            src="/bears/bear_sit_angle.png"
+            alt=""
+            width={297}
+            height={346}
+            className="h-28 w-auto"
+          />
           <h1 className="mt-3 font-display text-2xl font-bold text-berry">
             {isSupabaseConfigured ? "Editor sign-in" : "Admin isn't set up yet"}
           </h1>
@@ -50,7 +57,11 @@ export default async function AdminLoginPage({
         </div>
 
         <div className="mt-6 rounded-xl border border-brown-faint bg-paper p-5 sm:p-6">
-          {isSupabaseConfigured ? <LoginForm next={next} /> : <SetupInstructions />}
+          {isSupabaseConfigured ? (
+            <LoginForm next={next} />
+          ) : (
+            <SetupInstructions />
+          )}
         </div>
 
         <p className="mt-5 text-center text-sm text-brown-mid">
@@ -76,40 +87,42 @@ function SetupInstructions() {
   return (
     <div className="flex flex-col gap-5 text-left">
       <p className="text-[0.95rem] text-brown">
-        There&apos;s no sign-in form here because there&apos;s nothing to sign in to yet. Four steps,
-        once:
+        There&apos;s no sign-in form here because there&apos;s nothing to sign
+        in to yet. Four steps, once:
       </p>
 
       <ol className="flex list-none flex-col gap-5">
         <Step n={1} title="Create the database">
           <p>
             Make a Supabase project, open the SQL Editor, and run{" "}
-            <Code>supabase/migrations/0001_init.sql</Code> from this repo. It creates every table,
-            the row-level-security policies, and the private{" "}
-            <Code>volunteer-proof</Code> storage bucket.
+            <Code>supabase/migrations/0001_init.sql</Code> from this repo. It
+            creates every table, the row-level-security policies, and the
+            private <Code>volunteer-proof</Code> storage bucket.
           </p>
         </Step>
 
         <Step n={2} title="Set the environment variables">
           <p>
-            Copy <Code>.env.example</Code> to <Code>.env.local</Code> (or paste them into Vercel)
-            and fill in three values from Supabase → Project settings → API:
+            Copy <Code>.env.example</Code> to <Code>.env.local</Code> (or paste
+            them into Vercel) and fill in three values from Supabase → Project
+            settings → API:
           </p>
           <Pre>{`NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=`}</Pre>
           <p className="text-sm text-brown-mid">
-            The first two switch on reads and this login screen. The service-role key is what lets
-            forms save and editors approve — keep it server-side, never prefixed with{" "}
-            <Code>NEXT_PUBLIC_</Code>.
+            The first two switch on reads and this login screen. The
+            service-role key is what lets forms save and editors approve — keep
+            it server-side, never prefixed with <Code>NEXT_PUBLIC_</Code>.
           </p>
         </Step>
 
         <Step n={3} title="Add the first editor by hand">
           <p>
-            Supabase → Authentication → Users → <strong>Add user</strong>, with &ldquo;Auto Confirm
-            User&rdquo; on. Then Authentication → Providers → Email and turn{" "}
-            <strong>Enable Sign Ups off</strong>, so nobody can create their own account.
+            Supabase → Authentication → Users → <strong>Add user</strong>, with
+            &ldquo;Auto Confirm User&rdquo; on. Then Authentication → Providers
+            → Email and turn <strong>Enable Sign Ups off</strong>, so nobody can
+            create their own account.
           </p>
         </Step>
 
@@ -117,21 +130,30 @@ SUPABASE_SERVICE_ROLE_KEY=`}</Pre>
           <p>Back in the SQL Editor, with their email:</p>
           <Pre>{BOOTSTRAP_SQL}</Pre>
           <p className="text-sm text-brown-mid">
-            Being signed in isn&apos;t enough — only rows in <Code>public.admins</Code> can reach
-            these pages. Repeat this step for each new editor.
+            Being signed in isn&apos;t enough — only rows in{" "}
+            <Code>public.admins</Code> can reach these pages. Repeat this step
+            for each new editor.
           </p>
         </Step>
       </ol>
 
       <p className="border-t border-brown-faint pt-4 text-sm text-brown-mid">
-        Restart the dev server after changing env vars, then reload this page — the sign-in form
-        will be here.
+        Restart the dev server after changing env vars, then reload this page —
+        the sign-in form will be here.
       </p>
     </div>
   );
 }
 
-function Step({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+function Step({
+  n,
+  title,
+  children,
+}: {
+  n: number;
+  title: string;
+  children: ReactNode;
+}) {
   return (
     <li className="flex gap-3">
       <span
@@ -145,7 +167,9 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
           <span className="sr-only">Step {n}: </span>
           {title}
         </h2>
-        <div className="flex flex-col gap-2 text-[0.95rem] text-brown">{children}</div>
+        <div className="flex flex-col gap-2 text-[0.95rem] text-brown">
+          {children}
+        </div>
       </div>
     </li>
   );
