@@ -1,4 +1,3 @@
-import { getVolunteer } from "@/lib/volunteer-auth";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 
@@ -6,10 +5,17 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
  * Chrome for every public page. Kept out of the root layout so `/admin` can
  * render its own, denser workspace shell instead.
  */
-export default async function SiteLayout({ children }: { children: React.ReactNode }) {
-  // Only ever a boolean past this point — the header is a client component and
-  // has no business receiving an email address or profile.
-  const signedIn = Boolean(await getVolunteer());
+/**
+ * Deliberately does NOT read the session.
+ *
+ * Calling cookies() here would make every page in this group render on demand,
+ * turning the whole public site dynamic for the sake of one header link. The
+ * link points at /account unconditionally instead, and /account bounces a
+ * signed-out visitor to /login. Pages that genuinely need to know — /volunteer
+ * and /blog/submit, which hide a form — read it themselves and accept being
+ * dynamic.
+ */
+export default function SiteLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
@@ -20,7 +26,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
         Skip to content
       </a>
 
-      <SiteHeader signedIn={signedIn} />
+      <SiteHeader />
       <main id="main" className="relative z-10 flex-1">
         {children}
       </main>

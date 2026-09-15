@@ -128,6 +128,37 @@ export default async function AdminVolunteersPage({
     else byVolunteer.set(key, { name: row.full_name, hours: row.hours ?? 0 });
   }
 
+  // Clubs, with their pooled approved hours. Read here rather than on a page of
+  // their own so there's one place to review volunteering.
+  const { data: groupRows } = await supabase
+    .from("groups")
+    .select("id,name,organisation,invite_code,created_at")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  const clubs = await Promise.all(
+    (groupRows ?? []).map(async (g) => {
+      const [{ data: entries }, { count }] = await Promise.all([
+        supabase
+          .from("volunteer_signups")
+          .select("hours,cards_made")
+          .eq("group_id", g.id)
+          .eq("status", "approved"),
+        supabase
+          .from("group_members")
+          .select("user_id", { count: "exact", head: true })
+          .eq("group_id", g.id),
+      ]);
+      return {
+        ...g,
+        members: count ?? 0,
+        hours:
+          Math.round((entries ?? []).reduce((n, e) => n + (Number(e.hours) || 0), 0) * 10) / 10,
+        cards: (entries ?? []).reduce((n, e) => n + (e.cards_made || 0), 0),
+      };
+    }),
+  );
+
   // Approved hours per volunteer — the figure a certificate would be issued
   // against. No thresholds: we issue our own certificate, not a graded award.
   const approvedTotals = [...byVolunteer.entries()]
@@ -242,6 +273,42 @@ export default async function AdminVolunteersPage({
           These are the hours volunteers entered themselves, as approved on this page. Pending and
           not-approved entries are excluded.
         </p>
+      </AdminCard>
+
+      {/* --- Clubs ----------------------------------------------------------- */}
+      <AdminCard
+        title="Clubs"
+        description="School clubs and groups. Totals count approved entries logged against the club."
+      >
+        {clubs.length === 0 ? (
+          <p className="text-[0.95rem] text-brown-mid">
+            No clubs yet. Volunteers create them from their own account.
+          </p>
+        ) : (
+          <ul className="flex list-none flex-col gap-2">
+            {clubs.map((c) => (
+              <li
+                key={c.id}
+                className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-brown-faint/60 pb-2 last:border-b-0 last:pb-0"
+              >
+                <span className="font-display font-bold text-berry">
+                  {c.name}
+                  {c.organisation ? (
+                    <span className="font-body text-sm font-normal text-brown-mid">
+                      {" "}
+                      · {c.organisation}
+                    </span>
+                  ) : null}
+                  <span className="ml-2 font-mono text-xs text-brown-soft">{c.invite_code}</span>
+                </span>
+                <span className="text-[0.95rem] text-brown tabular-nums">
+                  {formatNumber(c.members)} {c.members === 1 ? "member" : "members"} ·{" "}
+                  {formatNumber(c.hours)} h · {formatNumber(c.cards)} cards
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </AdminCard>
 
       {/* --- Export note ----------------------------------------------------- */}

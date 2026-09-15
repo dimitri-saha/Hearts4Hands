@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/Button";
 import { Logo } from "./Logo";
 
 /**
- * `signedIn` is resolved by the server layout and passed down — this is a
- * client component (mobile drawer, active-link state) so it can't read the
- * session itself.
+ * The account link is unconditional on purpose. Resolving signed-in state here
+ * would mean reading cookies in the layout, which makes every public page
+ * dynamic; /account redirects a signed-out visitor to /login, so one link
+ * serves both cases and the marketing pages stay static.
  */
-export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
+export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -99,10 +100,10 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
 
         <div className="flex items-center gap-2">
           <Link
-            href={signedIn ? "/account" : "/login"}
+            href="/account"
             className="hidden rough-pill px-3 py-2 font-display text-[1.02rem] font-bold text-brown transition-colors hover:bg-blush/70 hover:text-red-deep lg:inline-flex"
           >
-            {signedIn ? "My account" : "Sign in"}
+            My account
           </Link>
           <Button href="/donate" size="sm" className="hidden sm:inline-flex">
             Donate
@@ -160,10 +161,10 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
             ),
           )}
           <Link
-            href={signedIn ? "/account" : "/login"}
+            href="/account"
             className="rough-2 border-[2.5px] border-brown/40 bg-paper px-4 py-3 font-display text-lg font-bold text-brown hover:border-red"
           >
-            {signedIn ? "My account" : "Sign in"}
+            My account
           </Link>
           <Link
             href="/volunteer"

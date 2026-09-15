@@ -50,6 +50,13 @@ export default function PrivacyPage() {
               </a>{" "}
               any time to see, correct, or delete what we hold about you.
             </li>
+            <li>
+              The{" "}
+              <Link className={link} href="/terms">
+                terms of use
+              </Link>{" "}
+              cover accounts, hours, and what happens to a story you send.
+            </li>
           </ul>
         </Alert>
 
@@ -105,6 +112,35 @@ export default function PrivacyPage() {
           </section>
 
           <section>
+            <h2 className="text-2xl sm:text-3xl">Your account</h2>
+            <p className="mt-3 text-brown">
+              Logging hours and sending stories need an account, so we know whose work is whose and
+              can put the right name on a certificate. An account holds the volunteer&apos;s name,
+              an email address, an age range, and a country. Your password is stored by Supabase,
+              our database provider, scrambled in a way that means nobody at Hearts4Hands can read
+              it — including us.
+            </p>
+            <p className="mt-3 text-brown-mid">
+              You can sign in with a password or ask for a one-time link by email, whichever you
+              prefer. Reading the site — stories, the card guide, the donate page — never needs an
+              account, and neither does sending us a message.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl sm:text-3xl">Clubs</h2>
+            <p className="mt-3 text-brown">
+              If you join a school club, whoever runs it can see your name and the hours and cards
+              we&apos;ve approved for you. That&apos;s all. They cannot see your email address,
+              where you live, your photos, your stories, or anything still waiting to be checked.
+            </p>
+            <p className="mt-3 text-brown-mid">
+              You can leave a club whenever you like. Hours you already logged stay counted in its
+              total and on your own record.
+            </p>
+          </section>
+
+          <section>
             <h2 className="text-2xl sm:text-3xl">Photos of cards</h2>
             <p className="mt-3 text-brown">
               If you upload a photo to prove the cards you made, it goes into private storage that
@@ -147,6 +183,13 @@ export default function PrivacyPage() {
                   <tr className="border-b border-brown-faint/60">
                     <td className="py-2.5 pr-4">Photos of cards</td>
                     <td className="py-2.5">Deleted with the hour record they belong to</td>
+                  </tr>
+                  <tr className="border-b border-brown-faint/60">
+                    <td className="py-2.5 pr-4">Your account</td>
+                    <td className="py-2.5">
+                      Until you ask us to close it. Then your hour records are anonymised, not
+                      deleted, so published totals stay accurate
+                    </td>
                   </tr>
                   <tr>
                     <td className="py-2.5 pr-4">Published stories</td>
@@ -194,12 +237,18 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-2xl sm:text-3xl">Young volunteers</h2>
             <p className="mt-3 text-brown">
-              <strong className="font-display text-berry">Under 13:</strong> we don&apos;t collect
-              anything about the child. A parent, guardian, or teacher fills in the form and
-              becomes our only contact — we never ask for the child&apos;s name, email, or school,
-              and the form stops asking for a school entirely. Choosing &ldquo;Under 13&rdquo; on
-              the volunteer form switches this on automatically. Kids that age are very welcome to
-              make cards; we just don&apos;t keep records about them.
+              <strong className="font-display text-berry">Under 13:</strong> the account is set
+              up and held by a parent, guardian, or teacher — their email, their password, their
+              inbox. It carries the child&apos;s name, because the child did the volunteering and
+              the certificate names them, but we never ask for the child&apos;s own email address
+              or their school. Every message goes to the adult. Choosing &ldquo;Under 13&rdquo; at
+              sign-up switches all of this on automatically.
+            </p>
+            <p className="mt-3 text-brown">
+              These accounts can log hours and cards but cannot submit stories. Publishing a
+              child&apos;s writing under their name is a public disclosure that needs a stricter
+              kind of parental permission than an account can carry, so we don&apos;t take it at
+              all.
             </p>
             <p className="mt-3 text-brown">
               <strong className="font-display text-berry">13 to 17:</strong> you can sign up
@@ -227,7 +276,15 @@ export default function PrivacyPage() {
               <li>correct anything that&apos;s wrong</li>
               <li>delete your hour records and any photos you sent</li>
               <li>take a published story down, or republish it under a different name</li>
+              <li>close your account entirely</li>
             </ul>
+            <p className="mt-3 text-brown-mid">
+              Closing an account <strong className="font-display text-berry">anonymises</strong>{" "}
+              your hour records rather than erasing them: the hours stay in the totals we publish,
+              but stop being connected to you. If you&apos;d rather they were deleted outright, say
+              so and we&apos;ll do that instead. Published stories stay up unless you ask us to
+              remove them.
+            </p>
             <p className="mt-3 text-brown-mid">
               We&apos;ll do it within 30 days, usually much sooner. We won&apos;t ask you to justify
               it, and it won&apos;t affect your ability to keep volunteering.

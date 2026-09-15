@@ -196,3 +196,72 @@ export async function groupTotals(groupId: string): Promise<{ hours: number; mem
   );
   return { hours: Math.round(hours * 100) / 100, memberCount: count ?? 0 };
 }
+
+export type RosterEntry = {
+  userId: string;
+  name: string;
+  role: GroupRole;
+  approvedHours: number;
+  approvedCards: number;
+};
+
+/**
+ * A club leader's view of their members.
+ *
+ * Service role, because it spans other people's profiles and hour entries —
+ * which is exactly why the leadership check happens here, in code, rather than
+ * being stretched into an RLS policy. Returns names and totals only: no email
+ * addresses, no locations, no photos, no stories, and nothing about pending or
+ * rejected entries. Club leaders are often minors themselves, and the members
+ * usually are.
+ */
+export async function getGroupRoster(
+  groupId: string,
+  requesterId: string,
+): Promise<RosterEntry[] | null> {
+  const { getServiceClient } = await import("./supabase/server");
+  const admin = getServiceClient();
+  if (!admin) return null;
+
+  const { data: me } = await admin
+    .from("group_members")
+    .select("role")
+    .eq("group_id", groupId)
+    .eq("user_id", requesterId)
+    .maybeSingle();
+
+  // Not a leader of this group: no roster, no matter who is asking.
+  if (me?.role !== "leader") return null;
+
+  const { data: members } = await admin
+    .from("group_members")
+    .select("user_id, role")
+    .eq("group_id", groupId);
+
+  if (!members?.length) return [];
+
+  const ids = members.map((m) => m.user_id);
+  const [{ data: profiles }, { data: entries }] = await Promise.all([
+    admin.from("profiles").select("user_id, full_name").in("user_id", ids),
+    admin
+      .from("volunteer_signups")
+      .select("user_id, hours, cards_made")
+      .eq("group_id", groupId)
+      .eq("status", "approved"),
+  ]);
+
+  return members
+    .map((m) => {
+      const mine = (entries ?? []).filter((e) => e.user_id === m.user_id);
+      return {
+        userId: m.user_id,
+        name:
+          (profiles ?? []).find((p) => p.user_id === m.user_id)?.full_name ?? "A volunteer",
+        role: m.role,
+        approvedHours:
+          Math.round(mine.reduce((s, e) => s + (Number(e.hours) || 0), 0) * 100) / 100,
+        approvedCards: mine.reduce((s, e) => s + (e.cards_made || 0), 0),
+      };
+    })
+    .sort((a, b) => b.approvedHours - a.approvedHours);
+}

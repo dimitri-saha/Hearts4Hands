@@ -186,6 +186,21 @@ export function StatsForm({ initial }: { initial: StatsFormValues }) {
         <p className="text-sm text-brown-mid">
           Whole numbers. These are the impact tiles on the home page and the About page.
         </p>
+        <div className="rounded-lg border border-sky bg-sky/10 px-4 py-3 text-sm text-brown">
+          <strong className="font-display text-berry">
+            Cards, volunteers and hours are now worked out automatically
+          </strong>{" "}
+          from approved hour entries, so the public site ignores whatever is typed below for those
+          three. Approve an entry on{" "}
+          <a
+            className="font-bold text-red-deep underline decoration-pink-deep decoration-2 underline-offset-2"
+            href="/admin/volunteers"
+          >
+            Volunteer hours
+          </a>{" "}
+          and the figures move on their own. They&apos;re kept here only as a record of what was
+          counted before accounts existed. <strong>Money raised is still yours to maintain.</strong>
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field

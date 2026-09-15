@@ -57,9 +57,10 @@ And never infer someone's email address from session context; ask.
 The PRD (§7) recommends Squarespace + Google Forms because it assumed no dev resources.
 The user specified Next.js/Supabase instead, so:
 
-- **Volunteer sign-up and blog submission are native forms writing to Postgres**, not Google Forms. The PRD's *intent* — no volunteer logins, submissions land somewhere an admin can review and export — is preserved. Supabase's dashboard exports CSV, which covers the "spreadsheet backend" requirement for award tracking.
+- **Volunteer sign-up and blog submission are native forms writing to Postgres**, not Google Forms. Supabase's dashboard exports CSV, which covers the PRD's "spreadsheet backend" requirement.
 - **Blog posts live in Postgres with a draft/published flag**, not a manual copy-paste into a site builder. Editor review is a real workflow at `/admin`.
-- Everything still out of scope per §6: no volunteer accounts, no on-site payments, no automated awards, no blog comments.
+- **Volunteer accounts now exist** — a deliberate reversal of PRD §6, made once certificates became the point. Hours can only be certified if they belong to a known person, so logging hours and sending stories require an account. On-site payments and blog comments remain out of scope.
+- **No Presidential Volunteer Service Award.** PVSA is issued through authorised Certifying Organizations; implying hours count toward it was a promise this site can't keep. We issue our own certificate instead.
 
 ---
 
@@ -251,7 +252,30 @@ Copy `.env.example` → `.env.local`. Nothing is required to run `npm run dev`.
    ```
 5. Copy the project URL + anon key + service-role key into env vars.
 
-Tables: `volunteer_signups` · `blog_submissions` · `posts` · `contact_messages` · `site_stats` (single row, id=1) · `admins`.
+Tables: `volunteer_signups` · `blog_submissions` · `posts` · `contact_messages` · `site_stats` (single row, id=1) · `admins` · `profiles` · `groups` · `group_members`.
+
+### Three kinds of user
+
+| Who | Can read |
+|---|---|
+| anon | published posts, the stats row. Nothing else |
+| a volunteer | their own profile, hour entries, story submissions, and the groups they belong to |
+| an admin | everything, via `is_admin()` — membership of `admins`, **not** "is authenticated" |
+
+Public sign-ups are **on**, so "is logged in" is no longer a permission. Every write still goes
+through a server action on the service-role key, which sets `user_id` from the session and never
+from client input.
+
+Dashboard reads go through the **session** client (`lib/account-data.ts`) so RLS is doing the work
+rather than being bypassed — a wrong policy returns nothing instead of someone else's data. The two
+exceptions use the service role deliberately and are commented as such: club rosters (guarded by an
+explicit leadership check) and the impact-stat counts (which return integers, never rows).
+
+Also run `supabase/migrations/0004_accounts.sql`, then in Supabase: enable email sign-ups, keep
+"Confirm email" on, and add both `http://localhost:3000/**` and the production origin to
+**Authentication → URL Configuration → Redirect URLs**. Auth email links are built from
+`NEXT_PUBLIC_SITE_URL`; if it doesn't match that list exactly — `www` included — magic links and
+password resets fail with no visible error.
 
 Run `supabase/migrations/0002_purge_rejected.sql` too — it adds
 `purge_rejected_submissions(interval)` and a daily pg_cron job that deletes not-approved story
@@ -344,10 +368,24 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `'unsafe-inline'` for scripts on purpose: the strict alternative needs per-request nonces from
   middleware, which would force dynamic rendering site-wide. If you add a third-party script or
   embed, add its origin to `script-src`/`connect-src` or it will be silently blocked.
-- **Under-13 sign-ups are guardian-submitted, by design.** Picking `UNDER_13` (in `site.ts`)
-  on the volunteer form relabels name/email as the adult's, hides the school field, and changes
-  the consent wording. It is enforced server-side too: `volunteerSchemaGuarded` strips `school`
-  so a crafted POST can't store it. US COPPA is triggered by *actual knowledge* that you're
-  collecting a under-13's personal data — and an age dropdown creates exactly that knowledge —
-  so the fix is to not collect it, rather than to add a tickbox a child can tick. `ageGroup` is
-  required for this reason; making it optional would reopen the hole.
+- **Why under-13s are handled separately at all.** US COPPA bites on *actual knowledge* that
+  you're collecting a under-13's personal data — and an age dropdown creates exactly that
+  knowledge. The fix is to not collect it, rather than to add a tickbox a child can tick, which
+  is not verifiable parental consent. `ageGroup` is required at sign-up for this reason; making
+  it optional would reopen the hole. `logHours` never stores a school for these accounts, so a
+  school plus a town can't narrow down a specific child.
+- **Under-13 accounts are guardian-held.** The credentials belong to a parent, guardian, or
+  teacher; the profile carries the child's name because the certificate names them. Those accounts
+  cannot submit stories — refused by the form, by `submitBlogPost`, and by a trigger in migration
+  0004. Publishing a child's writing under their name is public disclosure, which needs stricter
+  consent than an account can carry.
+- **There is no anonymous volunteer form any more.** It was deleted, not hidden. Re-adding one
+  would bypass accounts entirely and produce hours that can't be certified, which is the whole
+  reason the login exists. `logHours` in `actions/account.ts` is the only path in.
+- **Volunteers, hours and cards are computed, not stored.** `lib/stats.ts` counts approved entries
+  on every render; the numbers in `site_stats` for those three are ignored by the public site and
+  kept only as a record of the pre-accounts era. **Money raised is still manual** — that one is
+  genuinely maintained by hand at `/admin/stats`.
+- **An hour entry is stamped with its club at logging time** (`volunteer_signups.group_id`), not
+  attributed by current membership. Joining a club never retroactively claims earlier work, and
+  leaving never strips it away.

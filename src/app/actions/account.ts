@@ -413,3 +413,181 @@ export async function logHours(_prev: ActionState, formData: FormData): Promise<
     "Logged. A real person checks every entry — it'll count toward your certificate once approved.",
   );
 }
+
+// ---------------------------------------------------------------------------
+// Groups (school clubs)
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a club. The creator becomes its leader.
+ *
+ * Membership is what pools hours, but an hour entry is stamped with its group
+ * at logging time — so joining a club never retroactively claims work done
+ * before, and leaving never strips it away.
+ */
+export async function createGroup(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { requireVolunteer } = await import("@/lib/volunteer-auth");
+  const { createGroupSchema } = await import("@/lib/validation");
+
+  const volunteer = await requireVolunteer("/account/groups");
+
+  const limit = rateLimit(`group-create:${volunteer.id}`, { limit: 3, windowMs: 60 * 60 * 1000 });
+  if (!limit.ok) return errorState("That's a few clubs at once. Please wait a little.");
+
+  const parsed = createGroupSchema.safeParse({
+    name: formData.get("name") ?? "",
+    organisation: formData.get("organisation") ?? "",
+  });
+  if (!parsed.success) {
+    return errorState("Please check the highlighted fields.", fieldErrors(parsed.error));
+  }
+
+  const admin = getServiceClient();
+  if (!admin) return errorState(UNCONFIGURED);
+
+  const { data: code, error: codeError } = await admin.rpc("generate_invite_code");
+  if (codeError || !code) {
+    console.error("[groups] invite code failed:", codeError?.message);
+    return errorState("Couldn't set up that club. Please try again.");
+  }
+
+  const { data: group, error } = await admin
+    .from("groups")
+    .insert({
+      name: parsed.data.name,
+      organisation: parsed.data.organisation,
+      invite_code: String(code),
+      created_by: volunteer.id,
+    })
+    .select("id")
+    .single();
+
+  if (error || !group) {
+    console.error("[groups] create failed:", error?.message);
+    return errorState("Couldn't set up that club. Please try again.");
+  }
+
+  const { error: memberError } = await admin
+    .from("group_members")
+    .insert({ group_id: group.id, user_id: volunteer.id, role: "leader" });
+
+  if (memberError) {
+    console.error("[groups] leader membership failed:", memberError.message);
+    return errorState("The club was made but we couldn't add you to it. Please email us.");
+  }
+
+  revalidatePath("/account/groups");
+  revalidatePath("/account");
+  return successState("Club created. Share the invite code below and hours start pooling.");
+}
+
+export async function joinGroup(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { requireVolunteer } = await import("@/lib/volunteer-auth");
+  const { joinGroupSchema } = await import("@/lib/validation");
+
+  const volunteer = await requireVolunteer("/account/groups");
+
+  // Invite codes are short, so brute-forcing one has to be expensive.
+  const limit = rateLimit(`group-join:${volunteer.id}`, { limit: 10, windowMs: 60 * 60 * 1000 });
+  if (!limit.ok) {
+    return errorState("Too many tries. Please wait a while and check the code with your club.");
+  }
+
+  const parsed = joinGroupSchema.safeParse({ code: formData.get("code") ?? "" });
+  if (!parsed.success) {
+    return errorState("Please check the code.", fieldErrors(parsed.error));
+  }
+
+  const admin = getServiceClient();
+  if (!admin) return errorState(UNCONFIGURED);
+
+  const { data: group } = await admin
+    .from("groups")
+    .select("id, name, archived")
+    .eq("invite_code", parsed.data.code)
+    .maybeSingle();
+
+  if (!group || group.archived) {
+    return errorState("We don't recognise that code. Double-check it with whoever runs the club.");
+  }
+
+  const { error } = await admin
+    .from("group_members")
+    .upsert(
+      { group_id: group.id, user_id: volunteer.id, role: "member" },
+      { onConflict: "group_id,user_id", ignoreDuplicates: true },
+    );
+
+  if (error) {
+    console.error("[groups] join failed:", error.message);
+    return errorState("Couldn't join that club. Please try again.");
+  }
+
+  revalidatePath("/account/groups");
+  revalidatePath("/account");
+  return successState(
+    `You're in ${group.name}. Hours you log from now on can count toward its total.`,
+  );
+}
+
+/** Leaders only. Use when a code has been shared too widely. */
+export async function rotateInviteCode(formData: FormData): Promise<void> {
+  const { requireVolunteer } = await import("@/lib/volunteer-auth");
+  const volunteer = await requireVolunteer("/account/groups");
+
+  const groupId = String(formData.get("groupId") ?? "");
+  if (!groupId) return;
+
+  const admin = getServiceClient();
+  if (!admin) return;
+
+  const { data: me } = await admin
+    .from("group_members")
+    .select("role")
+    .eq("group_id", groupId)
+    .eq("user_id", volunteer.id)
+    .maybeSingle();
+  if (me?.role !== "leader") return;
+
+  const { data: code } = await admin.rpc("generate_invite_code");
+  if (!code) return;
+
+  await admin.from("groups").update({ invite_code: String(code) }).eq("id", groupId);
+  revalidatePath("/account/groups");
+}
+
+export async function leaveGroup(formData: FormData): Promise<void> {
+  const { requireVolunteer } = await import("@/lib/volunteer-auth");
+  const volunteer = await requireVolunteer("/account/groups");
+
+  const groupId = String(formData.get("groupId") ?? "");
+  if (!groupId) return;
+
+  const admin = getServiceClient();
+  if (!admin) return;
+
+  const { data: members } = await admin
+    .from("group_members")
+    .select("user_id, role")
+    .eq("group_id", groupId);
+
+  const me = (members ?? []).find((m) => m.user_id === volunteer.id);
+  if (!me) return;
+
+  // Don't strand a club with members but nobody to run it.
+  const otherLeaders = (members ?? []).filter(
+    (m) => m.role === "leader" && m.user_id !== volunteer.id,
+  );
+  if (me.role === "leader" && otherLeaders.length === 0 && (members ?? []).length > 1) {
+    return;
+  }
+
+  await admin
+    .from("group_members")
+    .delete()
+    .eq("group_id", groupId)
+    .eq("user_id", volunteer.id);
+
+  revalidatePath("/account/groups");
+  revalidatePath("/account");
+}

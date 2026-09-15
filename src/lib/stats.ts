@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
-import { getPublicClient } from "./supabase/server";
+import { getPublicClient, getServiceClient } from "./supabase/server";
 import type { SiteStats } from "./supabase/types";
 import { fallbackStats } from "./site";
 
@@ -39,22 +39,85 @@ function fromRow(row: SiteStats): ImpactStats {
 
 const fallback: ImpactStats = { ...fallbackStats, note: null, isLive: false };
 
-/** Manually maintained impact numbers (PRD §5.3). Never throws. */
+/**
+ * Volunteers, hours and cards, counted from approved entries.
+ *
+ * Service role, because `volunteer_signups` is readable only by its owner and
+ * by admins — but this returns three integers and never a row, so nothing
+ * about any individual leaves the function. Counting beats storing: there is
+ * no figure to remember to update and nothing that can drift out of step with
+ * what was actually approved.
+ */
+async function countApprovedWork(): Promise<{
+  volunteers: number;
+  hours: number;
+  cards: number;
+} | null> {
+  const admin = getServiceClient();
+  if (!admin) return null;
+
+  const { data, error } = await admin
+    .from("volunteer_signups")
+    .select("user_id,email,hours,cards_made")
+    .eq("status", "approved")
+    .limit(10000);
+
+  if (error) {
+    console.error("[stats] approved-work count failed:", error.message);
+    return null;
+  }
+
+  let hours = 0;
+  let cards = 0;
+  const people = new Set<string>();
+
+  for (const row of data ?? []) {
+    hours += Number(row.hours) || 0;
+    cards += row.cards_made || 0;
+    // Entries predating accounts have no user_id; fall back to the email so
+    // one person logging several times still counts once.
+    people.add(row.user_id ?? row.email.toLowerCase());
+  }
+
+  return {
+    volunteers: people.size,
+    hours: Math.round(hours),
+    cards,
+  };
+}
+
+/**
+ * Impact numbers.
+ *
+ * Money raised stays manual (PRD §5.3) — that genuinely is maintained by hand.
+ * Everything else is derived from approved hour entries. Never throws.
+ */
 export const getStats = cache(async (): Promise<ImpactStats> => {
   const supabase = getPublicClient();
   if (!supabase) return fallback;
 
-  const { data, error } = await supabase
-    .from("site_stats")
-    .select("*")
-    .eq("id", 1)
-    .maybeSingle();
+  const [{ data, error }, counted] = await Promise.all([
+    supabase.from("site_stats").select("*").eq("id", 1).maybeSingle(),
+    countApprovedWork(),
+  ]);
 
   if (error) {
     console.error("[stats] failed to load site stats:", error.message);
     return fallback;
   }
-  return data ? fromRow(data) : fallback;
+
+  const base = data ? fromRow(data) : fallback;
+  if (!counted) return base;
+
+  return {
+    ...base,
+    volunteers: counted.volunteers,
+    hoursLogged: counted.hours,
+    cardsMade: counted.cards,
+    // Live once there is any approved work, even if nobody has saved money
+    // figures yet.
+    isLive: base.isLive || counted.volunteers > 0,
+  };
 });
 
 /**

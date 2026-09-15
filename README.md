@@ -21,10 +21,15 @@ Product spec: [`docs/PRD.md`](docs/PRD.md) · Developer/agent guide: [`CLAUDE.md
 | Stories | `/blog` · `/blog/[slug]` · `/blog/submit` | Published posts, category filters, submission form |
 | Contact | `/contact` | Who to email, general contact form, partner info |
 | Privacy | `/privacy` | What's collected, retention periods, deletion requests |
+| Terms | `/terms` | Account rules, story permissions, closing an account |
+| Account | `/signup` · `/login` · `/account` | Volunteer accounts: dashboard, log hours, clubs |
 | Admin | `/admin` | Editor sign-in, review volunteer hours, publish stories, edit impact numbers, read messages |
 
-**No payment processing on-site** and **no volunteer logins** — both are out of scope per PRD §6.
-Donations link out; the admin area is for a handful of staff accounts created by hand.
+**No payment processing on-site** — out of scope per PRD §6; donations link out.
+
+**Volunteers do have logins**, which reverses PRD §6 deliberately: hours can only be certified if
+they belong to a known person. Logging hours and sending stories need an account; reading anything,
+and the contact form, do not. `/admin` is separate and gated on membership of the `admins` table.
 
 ---
 

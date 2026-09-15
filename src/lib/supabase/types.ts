@@ -227,7 +227,15 @@ export type Database = {
       };
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    // Declared so `supabase.rpc(...)` is typed. Defined in migrations 0001-0004.
+    Functions: {
+      generate_invite_code: { Args: Record<string, never>; Returns: string };
+      is_admin: { Args: Record<string, never>; Returns: boolean };
+      is_group_member: { Args: { gid: string }; Returns: boolean };
+      is_group_leader: { Args: { gid: string }; Returns: boolean };
+      purge_rejected_submissions: { Args: { retain?: string }; Returns: number };
+      purge_handled_messages: { Args: { retain?: string }; Returns: number };
+    };
     Enums: {
       submission_status: SubmissionStatus;
       post_status: PostStatus;
