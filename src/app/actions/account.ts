@@ -591,3 +591,114 @@ export async function leaveGroup(formData: FormData): Promise<void> {
   revalidatePath("/account/groups");
   revalidatePath("/account");
 }
+
+/**
+ * Leaders manage their roster: promote a co-leader, demote, or remove someone.
+ *
+ * Every one of these re-checks leadership against the database rather than
+ * trusting the page that rendered the button — a form post is just an HTTP
+ * request, and the page it came from proves nothing.
+ *
+ * A club is never left without a leader: the last one can't be demoted or
+ * removed while anyone else is still in the group.
+ */
+async function leaderGuard(groupId: string, actorId: string) {
+  const admin = getServiceClient();
+  if (!admin || !groupId) return null;
+
+  const { data: me } = await admin
+    .from("group_members")
+    .select("role")
+    .eq("group_id", groupId)
+    .eq("user_id", actorId)
+    .maybeSingle();
+
+  return me?.role === "leader" ? admin : null;
+}
+
+/** Would this change leave a club with members but nobody running it? */
+async function wouldStrandGroup(
+  admin: NonNullable<Awaited<ReturnType<typeof getServiceClient>>>,
+  groupId: string,
+  targetId: string,
+) {
+  const { data: members } = await admin
+    .from("group_members")
+    .select("user_id, role")
+    .eq("group_id", groupId);
+
+  const all = members ?? [];
+  const target = all.find((m) => m.user_id === targetId);
+  if (target?.role !== "leader") return false;
+
+  const otherLeaders = all.filter((m) => m.role === "leader" && m.user_id !== targetId);
+  return otherLeaders.length === 0 && all.length > 1;
+}
+
+export async function setMemberRole(formData: FormData): Promise<void> {
+  const { requireVolunteer } = await import("@/lib/volunteer-auth");
+  const me = await requireVolunteer("/account/groups");
+
+  const groupId = String(formData.get("groupId") ?? "");
+  const userId = String(formData.get("userId") ?? "");
+  const role = String(formData.get("role") ?? "");
+  if (!userId || !["leader", "member"].includes(role)) return;
+
+  const admin = await leaderGuard(groupId, me.id);
+  if (!admin) return;
+
+  if (role === "member" && (await wouldStrandGroup(admin, groupId, userId))) return;
+
+  await admin
+    .from("group_members")
+    .update({ role: role as "leader" | "member" })
+    .eq("group_id", groupId)
+    .eq("user_id", userId);
+
+  revalidatePath("/account/groups");
+}
+
+export async function removeMember(formData: FormData): Promise<void> {
+  const { requireVolunteer } = await import("@/lib/volunteer-auth");
+  const me = await requireVolunteer("/account/groups");
+
+  const groupId = String(formData.get("groupId") ?? "");
+  const userId = String(formData.get("userId") ?? "");
+  if (!userId) return;
+
+  const admin = await leaderGuard(groupId, me.id);
+  if (!admin) return;
+
+  // Leaders use "leave" for themselves, so the stranding rules stay in one place.
+  if (userId === me.id) return;
+  if (await wouldStrandGroup(admin, groupId, userId)) return;
+
+  await admin.from("group_members").delete().eq("group_id", groupId).eq("user_id", userId);
+
+  // Their hours stay stamped with this club, exactly as when someone leaves of
+  // their own accord. The work happened; the total shouldn't rewrite itself.
+  revalidatePath("/account/groups");
+  revalidatePath("/account");
+}
+
+/**
+ * Archive a club that's finished — a graduating year group, a one-off drive.
+ *
+ * Archiving stops new members joining and takes it out of the "count this
+ * toward" list, but keeps every hour already logged against it. Deleting a club
+ * outright isn't offered: it would orphan hours that people were certified for.
+ */
+export async function setGroupArchived(formData: FormData): Promise<void> {
+  const { requireVolunteer } = await import("@/lib/volunteer-auth");
+  const me = await requireVolunteer("/account/groups");
+
+  const groupId = String(formData.get("groupId") ?? "");
+  const archived = String(formData.get("archived") ?? "") === "true";
+
+  const admin = await leaderGuard(groupId, me.id);
+  if (!admin) return;
+
+  await admin.from("groups").update({ archived }).eq("id", groupId);
+  revalidatePath("/account/groups");
+  revalidatePath("/account");
+}

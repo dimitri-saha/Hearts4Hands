@@ -30,7 +30,11 @@ export default async function LogHoursPage() {
       </header>
 
       <Card tone="paper" seed="log-hours" className="px-5 py-7 sm:px-8 sm:py-9">
-        <LogHoursForm groups={memberships.map((m) => ({ id: m.group.id, name: m.group.name }))} />
+        <LogHoursForm
+          groups={memberships
+            .filter((m) => !m.group.archived)
+            .map((m) => ({ id: m.group.id, name: m.group.name }))}
+        />
       </Card>
     </div>
   );

@@ -153,6 +153,8 @@ export async function getMyGroups(userId: string): Promise<Membership[]> {
 
   const ids = memberships.map((m) => m.group_id);
   const { data: groups } = await supabase.from("groups").select("*").in("id", ids);
+  // Archived clubs still appear on the groups page (with their history intact)
+  // but are filtered out of the hour-logging picker by the caller.
 
   const out: Membership[] = [];
   for (const m of memberships) {
@@ -206,14 +208,21 @@ export type RosterEntry = {
 };
 
 /**
- * A club leader's view of their members.
+ * The club roster, visible to every member — not just leaders.
+ *
+ * Members seeing each other is the point of a club: in a school group everyone
+ * already knows who's in the room, and seeing the totals is half the motivation.
+ * The privacy line is drawn at *what* is shown rather than who sees it — names,
+ * approved hours and approved cards, and nothing else. No email addresses, no
+ * locations, no photos, no stories, nothing pending or rejected. Leaders get the
+ * same list plus the management controls.
+ *
+ * The exposure that matters is someone joining with a leaked code, which is why
+ * codes rotate in one click and leaders can now remove people.
  *
  * Service role, because it spans other people's profiles and hour entries —
- * which is exactly why the leadership check happens here, in code, rather than
- * being stretched into an RLS policy. Returns names and totals only: no email
- * addresses, no locations, no photos, no stories, and nothing about pending or
- * rejected entries. Club leaders are often minors themselves, and the members
- * usually are.
+ * which is why membership is checked here, in code, rather than stretching an
+ * RLS policy wide enough to allow it.
  */
 export async function getGroupRoster(
   groupId: string,
@@ -230,8 +239,8 @@ export async function getGroupRoster(
     .eq("user_id", requesterId)
     .maybeSingle();
 
-  // Not a leader of this group: no roster, no matter who is asking.
-  if (me?.role !== "leader") return null;
+  // Not in this group at all: no roster, no matter who is asking.
+  if (!me) return null;
 
   const { data: members } = await admin
     .from("group_members")

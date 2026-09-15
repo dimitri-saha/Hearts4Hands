@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 
-import { leaveGroup, rotateInviteCode } from "@/app/actions/account";
+import {
+  leaveGroup,
+  removeMember,
+  rotateInviteCode,
+  setGroupArchived,
+  setMemberRole,
+} from "@/app/actions/account";
 import { getGroupRoster, getMyGroups } from "@/lib/account-data";
 import { site } from "@/lib/site";
 import { formatNumber } from "@/lib/utils";
@@ -16,10 +22,9 @@ export default async function GroupsPage() {
   const volunteer = await requireVolunteer("/account/groups");
   const memberships = await getMyGroups(volunteer.id);
 
+  // Every member sees the roster now, so this is fetched for all memberships.
   const rosters = await Promise.all(
-    memberships.map(async (m) =>
-      m.role === "leader" ? await getGroupRoster(m.group.id, volunteer.id) : null,
-    ),
+    memberships.map((m) => getGroupRoster(m.group.id, volunteer.id)),
   );
 
   return (
@@ -55,9 +60,12 @@ export default async function GroupsPage() {
                       <p className="text-sm text-brown-mid">{m.group.organisation}</p>
                     ) : null}
                   </div>
-                  <Tag tone={m.role === "leader" ? "red" : "pink"}>
-                    {m.role === "leader" ? "You run this" : "Member"}
-                  </Tag>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {m.group.archived ? <Tag tone="brown">Archived</Tag> : null}
+                    <Tag tone={m.role === "leader" ? "red" : "pink"}>
+                      {m.role === "leader" ? "You run this" : "Member"}
+                    </Tag>
+                  </div>
                 </div>
 
                 <p className="mt-3 text-brown">
@@ -68,65 +76,146 @@ export default async function GroupsPage() {
                   {m.memberCount === 1 ? "member" : "members"}
                 </p>
 
+                {/* Roster: everyone in the club sees it. Names and approved
+                    totals only — see getGroupRoster for why. */}
+                <div className="mt-5 border-t-2 border-dashed border-brown-faint pt-5">
+                  <p className="font-display font-bold text-berry">Members</p>
+                  {roster && roster.length > 0 ? (
+                    <ul className="mt-2 flex list-none flex-col gap-2">
+                      {roster.map((r) => (
+                        <li
+                          key={r.userId}
+                          className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-brown-faint/60 pb-2 last:border-b-0 last:pb-0"
+                        >
+                          <span className="text-brown">
+                            {r.name}
+                            {r.userId === volunteer.id ? (
+                              <span className="ml-2 font-hand text-sm text-brown-soft">you</span>
+                            ) : null}
+                            {r.role === "leader" ? (
+                              <span className="ml-2 font-hand text-sm text-red-deep">leader</span>
+                            ) : null}
+                          </span>
+
+                          <span className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm text-brown-mid tabular-nums">
+                              {formatNumber(r.approvedHours)} h · {formatNumber(r.approvedCards)}{" "}
+                              cards
+                            </span>
+
+                            {m.role === "leader" && r.userId !== volunteer.id ? (
+                              <>
+                                <form action={setMemberRole}>
+                                  <input type="hidden" name="groupId" value={m.group.id} />
+                                  <input type="hidden" name="userId" value={r.userId} />
+                                  <input
+                                    type="hidden"
+                                    name="role"
+                                    value={r.role === "leader" ? "member" : "leader"}
+                                  />
+                                  <button
+                                    type="submit"
+                                    className="rounded-lg border border-brown-faint bg-paper px-2.5 py-1 font-display text-xs font-bold text-brown-mid hover:border-red hover:text-berry"
+                                  >
+                                    {r.role === "leader" ? "Make member" : "Make leader"}
+                                  </button>
+                                </form>
+
+                                <details className="inline-block">
+                                  <summary className="cursor-pointer list-none rounded-lg border border-brown-faint bg-paper px-2.5 py-1 font-display text-xs font-bold text-brown-mid marker:content-none hover:border-red hover:text-berry">
+                                    Remove
+                                  </summary>
+                                  <div className="mt-1 flex flex-col items-end gap-1.5 rounded-lg border border-red bg-red/5 p-2">
+                                    <p className="max-w-52 text-right text-xs text-brown-mid">
+                                      Remove {r.name} from this club? Their hours stay counted —
+                                      both for them and in this total.
+                                    </p>
+                                    <form action={removeMember}>
+                                      <input type="hidden" name="groupId" value={m.group.id} />
+                                      <input type="hidden" name="userId" value={r.userId} />
+                                      <button
+                                        type="submit"
+                                        className="rounded-lg border border-red bg-red/10 px-2.5 py-1 font-display text-xs font-bold text-berry hover:bg-red/20"
+                                      >
+                                        Yes, remove
+                                      </button>
+                                    </form>
+                                  </div>
+                                </details>
+                              </>
+                            ) : null}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-1 text-sm text-brown-mid">Nobody has joined yet.</p>
+                  )}
+                  <p className="mt-2 text-sm text-brown-soft">
+                    Names and approved totals only — nobody here can see anyone&apos;s email
+                    address, photos, or stories.
+                  </p>
+                </div>
+
                 {m.role === "leader" ? (
                   <div className="mt-5 flex flex-col gap-4 border-t-2 border-dashed border-brown-faint pt-5">
                     <div>
                       <p className="font-display font-bold text-berry">Invite code</p>
-                      <p className="mt-1 font-mono text-2xl tracking-[0.3em] text-red-deep select-all">
-                        {m.group.invite_code}
+                      {m.group.archived ? (
+                        <p className="mt-1 text-sm text-brown-mid">
+                          This club is archived, so nobody new can join.
+                        </p>
+                      ) : (
+                        <>
+                          <p className="mt-1 font-mono text-2xl tracking-[0.3em] text-red-deep select-all">
+                            {m.group.invite_code}
+                          </p>
+                          <p className="mt-1 text-sm text-brown-mid break-all">
+                            Or share:{" "}
+                            <span className="select-all">
+                              {site.url}/account/groups?code={m.group.invite_code}
+                            </span>
+                          </p>
+                          <form action={rotateInviteCode} className="mt-2">
+                            <input type="hidden" name="groupId" value={m.group.id} />
+                            <button
+                              type="submit"
+                              className="rounded-lg border border-brown-faint bg-paper px-3 py-1.5 font-display text-sm font-bold text-brown-mid hover:border-red hover:text-berry"
+                            >
+                              Get a new code
+                            </button>
+                          </form>
+                          <p className="mt-1 text-sm text-brown-soft">
+                            Changing it stops the old one working. Nobody already in the club is
+                            removed.
+                          </p>
+                        </>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="font-display font-bold text-berry">
+                        {m.group.archived ? "Reopen this club" : "Finished with this club?"}
                       </p>
-                      <p className="mt-1 text-sm text-brown-mid break-all">
-                        Or share:{" "}
-                        <span className="select-all">
-                          {site.url}/account/groups?code={m.group.invite_code}
-                        </span>
+                      <p className="mt-1 mb-2 text-sm text-brown-mid">
+                        {m.group.archived
+                          ? "Reopening lets people join again and log hours toward it."
+                          : "Archiving closes it to new members and takes it out of the hour-logging list. Every hour already logged stays counted."}
                       </p>
-                      <form action={rotateInviteCode} className="mt-2">
+                      <form action={setGroupArchived}>
                         <input type="hidden" name="groupId" value={m.group.id} />
+                        <input
+                          type="hidden"
+                          name="archived"
+                          value={m.group.archived ? "false" : "true"}
+                        />
                         <button
                           type="submit"
                           className="rounded-lg border border-brown-faint bg-paper px-3 py-1.5 font-display text-sm font-bold text-brown-mid hover:border-red hover:text-berry"
                         >
-                          Get a new code
+                          {m.group.archived ? "Reopen club" : "Archive club"}
                         </button>
                       </form>
-                      <p className="mt-1 text-sm text-brown-soft">
-                        Changing it stops the old one working. Nobody already in the club is
-                        removed.
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="font-display font-bold text-berry">Members</p>
-                      {roster && roster.length > 0 ? (
-                        <ul className="mt-2 flex list-none flex-col gap-1.5">
-                          {roster.map((r) => (
-                            <li
-                              key={r.userId}
-                              className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-brown-faint/60 pb-1.5 last:border-b-0"
-                            >
-                              <span className="text-brown">
-                                {r.name}
-                                {r.role === "leader" ? (
-                                  <span className="ml-2 font-hand text-sm text-red-deep">
-                                    leader
-                                  </span>
-                                ) : null}
-                              </span>
-                              <span className="text-sm text-brown-mid tabular-nums">
-                                {formatNumber(r.approvedHours)} h ·{" "}
-                                {formatNumber(r.approvedCards)} cards
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="mt-1 text-sm text-brown-mid">Nobody has joined yet.</p>
-                      )}
-                      <p className="mt-2 text-sm text-brown-soft">
-                        Names and totals only — we don&apos;t show you members&apos; email
-                        addresses, photos or stories.
-                      </p>
                     </div>
                   </div>
                 ) : null}
