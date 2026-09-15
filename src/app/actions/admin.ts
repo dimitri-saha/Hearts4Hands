@@ -93,8 +93,15 @@ export async function reviewVolunteer(formData: FormData): Promise<void> {
     .eq("id", id);
 
   if (error) console.error("[admin] reviewVolunteer failed:", error.message);
+
   revalidatePath("/admin/volunteers");
   revalidatePath("/admin");
+  // The public impact numbers are counted from approved entries, so a decision
+  // here changes them. Without these the home and donate pages would keep
+  // serving stale figures until their ISR window expired.
+  revalidatePath("/");
+  revalidatePath("/donate");
+  revalidatePath("/about");
 }
 
 /**

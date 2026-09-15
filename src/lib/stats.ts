@@ -52,13 +52,15 @@ async function countApprovedWork(): Promise<{
   volunteers: number;
   hours: number;
   cards: number;
+  /** When the most recent entry was approved — drives the "last updated" line. */
+  lastApprovedAt: string | null;
 } | null> {
   const admin = getServiceClient();
   if (!admin) return null;
 
   const { data, error } = await admin
     .from("volunteer_signups")
-    .select("user_id,email,hours,cards_made")
+    .select("user_id,email,hours,cards_made,reviewed_at")
     .eq("status", "approved")
     .limit(10000);
 
@@ -69,11 +71,15 @@ async function countApprovedWork(): Promise<{
 
   let hours = 0;
   let cards = 0;
+  let lastApprovedAt: string | null = null;
   const people = new Set<string>();
 
   for (const row of data ?? []) {
     hours += Number(row.hours) || 0;
     cards += row.cards_made || 0;
+    if (row.reviewed_at && (!lastApprovedAt || row.reviewed_at > lastApprovedAt)) {
+      lastApprovedAt = row.reviewed_at;
+    }
     // Entries predating accounts have no user_id; fall back to the email so
     // one person logging several times still counts once.
     people.add(row.user_id ?? row.email.toLowerCase());
@@ -83,6 +89,7 @@ async function countApprovedWork(): Promise<{
     volunteers: people.size,
     hours: Math.round(hours),
     cards,
+    lastApprovedAt,
   };
 }
 
@@ -109,8 +116,18 @@ export const getStats = cache(async (): Promise<ImpactStats> => {
   const base = data ? fromRow(data) : fallback;
   if (!counted) return base;
 
+  // "Last updated" has to mean the newest thing that actually changed. The
+  // money figures are edited by hand (site_stats.updated_at) while the counts
+  // move whenever an entry is approved — so take whichever happened later,
+  // otherwise the date can sit weeks behind numbers that changed this morning.
+  const updatedAt =
+    counted.lastApprovedAt && (!base.updatedAt || counted.lastApprovedAt > base.updatedAt)
+      ? counted.lastApprovedAt
+      : base.updatedAt;
+
   return {
     ...base,
+    updatedAt,
     volunteers: counted.volunteers,
     hoursLogged: counted.hours,
     cardsMade: counted.cards,

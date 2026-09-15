@@ -26,7 +26,11 @@ const csp = [
   "img-src 'self' data: blob: https://*.supabase.co",
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
-  "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
+  // 'unsafe-eval' is DEV ONLY. React's development build uses eval() for its
+  // debugging tooling and fast refresh; without it the dev overlay reports an
+  // error on every page. Production never gets it — that's the directive that
+  // stops an injected script from evaluating arbitrary strings.
+  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ""}https://va.vercel-scripts.com`,
   [
     "connect-src 'self'",
     "https://*.supabase.co",
