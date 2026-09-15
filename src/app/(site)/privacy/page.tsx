@@ -145,7 +145,7 @@ export default function PrivacyPage() {
             <p className="mt-3 text-brown">
               If you upload a photo to prove the cards you made, it goes into private storage that
               the public cannot reach. Only a signed-in editor can open it, through a link that
-              expires after 30 minutes.
+              expires after two hours.
             </p>
             <p className="mt-3 text-brown-mid">
               Please photograph the cards themselves — not people. If a photo you send includes

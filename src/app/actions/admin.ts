@@ -105,8 +105,13 @@ export async function reviewVolunteer(formData: FormData): Promise<void> {
 }
 
 /**
- * Short-lived signed URL for a private proof upload. Called from the
- * volunteers page during render — never exposed as a public route.
+ * Short-lived signed URL for a private proof upload.
+ *
+ * Minted fresh on every render of the volunteers page, so the expiry is never
+ * a deadline for reviewing — it only bounds how long one particular link stays
+ * usable if it's copied elsewhere or the tab is left open. Two hours is long
+ * enough that a reviewer never meets it in practice, and short enough that a
+ * leaked URL stops working the same afternoon.
  */
 export async function getProofUrl(path: string): Promise<string | null> {
   await requireAdmin("/admin/volunteers");
@@ -116,7 +121,7 @@ export async function getProofUrl(path: string): Promise<string | null> {
 
   const { data, error } = await supabase.storage
     .from(PROOF_BUCKET)
-    .createSignedUrl(path, 60 * 30);
+    .createSignedUrl(path, 60 * 120);
 
   if (error) {
     console.error("[admin] signed URL failed:", error.message);

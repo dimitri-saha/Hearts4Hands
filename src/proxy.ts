@@ -12,6 +12,27 @@ import { createServerClient } from "@supabase/ssr";
  * public marketing pages stay fully static.
  */
 export default async function proxy(request: NextRequest) {
+  const { pathname, searchParams } = request.nextUrl;
+
+  /*
+   * Rescue an auth code that landed on the wrong page.
+   *
+   * Supabase silently falls back to the project's Site URL when the
+   * `emailRedirectTo` we ask for isn't in its allow-list — a `www` vs apex
+   * mismatch is enough. The user then lands on the homepage carrying
+   * `?code=…`, nothing exchanges it, and they stay signed out with no error
+   * anywhere. Funnelling any stray code to the callback makes email links work
+   * whichever allowed URL Supabase picks.
+   */
+  if (pathname !== "/auth/callback" && searchParams.has("code")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/callback";
+    if (!searchParams.has("next")) {
+      url.searchParams.set("next", pathname === "/" ? "/account" : pathname);
+    }
+    return NextResponse.redirect(url);
+  }
+
   const response = NextResponse.next({ request });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -36,5 +57,7 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/account/:path*"],
+  // "/" is included so a stray auth code landing on the homepage gets rescued
+  // by the block above.
+  matcher: ["/", "/admin/:path*", "/account/:path*"],
 };

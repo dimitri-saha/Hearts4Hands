@@ -201,7 +201,21 @@ export async function sendMagicLink(
     },
   });
 
-  if (error) console.error("[account] magic link failed:", error.message);
+  if (error) {
+    console.error("[account] magic link failed:", error.message);
+
+    // Rate limits are the one failure worth naming. Staying vague about
+    // *everything* is what made this look broken: Supabase enforces a short
+    // cooldown per address, and reporting "link sent" anyway meant clicking
+    // twice in quick succession produced a success message and no email.
+    // "That address has no account" stays deliberately silent — that's the
+    // case enumeration protection is actually for.
+    if (/rate|limit|seconds/i.test(error.message)) {
+      return errorState(
+        "You asked for a link a moment ago — give it a minute before trying again. If you're in a hurry, signing in with your password works right now.",
+      );
+    }
+  }
 
   // Same answer either way — see the enumeration note at the top.
   return successState(CHECK_INBOX);
@@ -237,7 +251,15 @@ export async function requestPasswordReset(
     redirectTo: `${site.url}/auth/callback?next=/reset-password`,
   });
 
-  if (error) console.error("[account] password reset failed:", error.message);
+  if (error) {
+    console.error("[account] password reset failed:", error.message);
+    // Same reasoning as the magic link above.
+    if (/rate|limit|seconds/i.test(error.message)) {
+      return errorState(
+        "You asked for a reset link a moment ago — give it a minute before trying again.",
+      );
+    }
+  }
 
   return successState(CHECK_INBOX);
 }
