@@ -124,19 +124,27 @@ export function categoryLabel(value: string) {
 }
 
 /**
- * Age brackets on the volunteer form.
+ * Age brackets at sign-up. Three, and each one earns its place:
  *
- * Required, not optional, because the answer changes what the form asks for.
- * Anyone under 13 is signed up by a parent, guardian, or teacher instead —
- * see UNDER_13 below.
+ *   Under 13     the COPPA gate — the only bracket the code actually branches
+ *                on. Switches the account to guardian-held. See UNDER_13.
+ *   13 to 17     old enough for their own account, still a minor, so the
+ *                consent wording asks them to check with a parent.
+ *   18 or older  an adult; none of the minor-specific wording applies.
+ *
+ * Finer brackets were tried and dropped. Splitting 13–15 from 16–17 mapped to
+ * GDPR Article 8's variable consent age (13 in the UK, 16 in Germany) — but
+ * nothing in the code acted on it, so it was a question asked for a rule we
+ * don't implement. Splitting 18–24 from 25+ was pure curiosity about the
+ * volunteer base. Both made a required field longer for no decision it changed.
+ *
+ * Required, not optional: a "prefer not to say" option would let an under-13
+ * walk straight past the gate.
  */
-export const ageGroups = [
-  "Under 13",
-  "13 to 15",
-  "16 to 17",
-  "18 to 24",
-  "25 or older",
-] as const;
+export const ageGroups = ["Under 13", "13 to 17", "18 or older"] as const;
+
+/** The bracket meaning "a minor who holds their own account". */
+export const MINOR_13_TO_17 = "13 to 17" as const;
 
 /**
  * The bracket that switches the form into guardian mode.

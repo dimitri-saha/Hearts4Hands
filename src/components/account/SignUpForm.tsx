@@ -5,7 +5,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 
 import { signUpVolunteer } from "@/app/actions/account";
 import { idleState, valueOf } from "@/lib/action-state";
-import { UNDER_13, ageGroups } from "@/lib/site";
+import { MINOR_13_TO_17, UNDER_13, ageGroups } from "@/lib/site";
 import { Alert, SuccessPanel } from "@/components/ui/Feedback";
 import { CheckboxRow, Field, Input, Select } from "@/components/ui/Field";
 import { AntiSpamFields, SubmitButton, useFormAttempt } from "@/components/ui/FormBits";
@@ -19,6 +19,9 @@ export function SignUpForm() {
   const attempt = useFormAttempt(state);
   const [ageGroup, setAgeGroup] = useState(() => valueOf(state, "ageGroup"));
   const isGuardian = ageGroup === UNDER_13;
+  // Shown only to 13-17s. Previously every adult saw this too, because the
+  // form had no way to tell who was a minor.
+  const isMinor = ageGroup === MINOR_13_TO_17;
 
   useEffect(() => {
     if (state.status === "error" && state.message) alertRef.current?.focus();
@@ -171,6 +174,7 @@ export function SignUpForm() {
         label={isGuardian ? "I'm the parent, guardian, or teacher, and I agree" : "I agree"}
         hint={
           <>
+            {isMinor ? "Please check with a parent or guardian first. " : null}
             I&apos;ve read the{" "}
             <Link className={linkClass} href="/terms">
               terms of use
