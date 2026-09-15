@@ -110,7 +110,7 @@ Then add the environment variables in **Project → Settings → Environment Var
 
 | Variable | Notes |
 |---|---|
-| `NEXT_PUBLIC_SITE_URL` | e.g. `https://hearts4hands.org` — used for canonical URLs, sitemap, OG images |
+| `NEXT_PUBLIC_SITE_URL` | `https://www.hearts4hands.org` — canonical URLs, sitemap, OG images, **and auth email links**. Must match Supabase's Redirect URLs exactly, `www` included |
 | `NEXT_PUBLIC_SUPABASE_URL` | |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | |
 | `SUPABASE_SERVICE_ROLE_KEY` | **not** `NEXT_PUBLIC_` |

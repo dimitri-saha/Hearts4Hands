@@ -192,11 +192,19 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl sm:text-3xl">Volunteers under 18</h2>
+            <h2 className="text-2xl sm:text-3xl">Young volunteers</h2>
             <p className="mt-3 text-brown">
-              Lots of our volunteers are students, and that&apos;s the point. If you&apos;re under
-              18, please check with a parent or guardian before sending us your name, email, or a
-              photo — the form asks you to confirm you have.
+              <strong className="font-display text-berry">Under 13:</strong> we don&apos;t collect
+              anything about the child. A parent, guardian, or teacher fills in the form and
+              becomes our only contact — we never ask for the child&apos;s name, email, or school,
+              and the form stops asking for a school entirely. Choosing &ldquo;Under 13&rdquo; on
+              the volunteer form switches this on automatically. Kids that age are very welcome to
+              make cards; we just don&apos;t keep records about them.
+            </p>
+            <p className="mt-3 text-brown">
+              <strong className="font-display text-berry">13 to 17:</strong> you can sign up
+              yourself. Please check with a parent or guardian first — the form asks you to
+              confirm you have.
             </p>
             <p className="mt-3 text-brown-mid">
               A parent or guardian can email us at any time to see what we hold about their child,

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ComponentType } from "react";
 
-import { contact, pvsaTiers, volunteerActivities } from "@/lib/site";
+import { contact, volunteerActivities } from "@/lib/site";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Section, SectionHeading, sectionHex } from "@/components/ui/Section";
@@ -21,7 +21,8 @@ import {
 import type { IllustrationProps } from "@/components/illustrations/types";
 import { CrossMark } from "@/components/volunteer/CrossMark";
 import { FaqList, type FaqItem } from "@/components/volunteer/FaqList";
-import { VolunteerForm } from "@/components/volunteer/VolunteerForm";
+import { getVolunteer } from "@/lib/volunteer-auth";
+import { SignInPrompt } from "@/components/account/SignInPrompt";
 
 export const metadata: Metadata = {
   title: "Volunteer",
@@ -63,11 +64,19 @@ const faqs: FaqItem[] = [
   {
     question: "Do I need to be a certain age?",
     answer: (
-      <p>
-        No. We have volunteers in elementary school and volunteers in college. If you&apos;re
-        under 18, check with a parent or guardian before you sign up, and ask them to help with
-        the mailing part.
-      </p>
+      <>
+        <p>
+          No. We have volunteers in elementary school and volunteers in college. If you&apos;re
+          under 18, check with a parent or guardian before you sign up, and ask them to help with
+          the mailing part.
+        </p>
+        <p className="mt-2">
+          If the volunteer is <strong>under 13</strong>, a parent, guardian, or teacher fills the
+          form in instead. We don&apos;t ask for a young child&apos;s name, email, or school at
+          all — the grown-up is our contact, and the cards still count. Pick &ldquo;Under
+          13&rdquo; in the form and it switches over on its own.
+        </p>
+      </>
     ),
   },
   {
@@ -128,7 +137,8 @@ const faqs: FaqItem[] = [
   },
 ];
 
-export default function VolunteerPage() {
+export default async function VolunteerPage() {
+  const signedIn = Boolean(await getVolunteer());
   return (
     <>
       <PageHeader
@@ -279,52 +289,50 @@ export default function VolunteerPage() {
           <div className="w-full">
             <SectionHeading
               eyebrow="Recognition"
-              title="Volunteer awards"
+              title="We send you a certificate"
               align="left"
-              subtitle="Plenty of students volunteer with us for a service award. That's a good reason, and we'll help you get there."
+              subtitle="Plenty of students volunteer with us for a school service requirement. Here's the record you can hand in."
             />
 
             <div className="mt-6 flex flex-col gap-4 text-brown-mid">
               <p>
-                Here&apos;s how it works. You log your hours honestly and upload proof of what you
-                made. An adult on our team reviews them. Approved hours go into a running total we
-                keep for you, so when you need a record, we have one.
+                Here&apos;s how it works. You log your hours honestly and upload a photo of what you
+                made. An adult on our team checks it. Approved hours go into a running total on your
+                account, and whenever you need it, you can ask us for a certificate.
               </p>
               <p>
-                The Presidential Volunteer Service Award recognizes hours of service over a year.
-                These are the tiers we track toward:
+                The certificate names you, the hours you volunteered, and the dates they cover — so
+                a teacher or an admissions office can see exactly what it&apos;s for. Each hour is
+                only ever counted on one certificate, so nothing can be claimed twice.
+              </p>
+              <p>
+                It comes from us, Hearts4Hands. We&apos;re not a government awards body and
+                don&apos;t claim to be — this is our own record of work we actually saw and checked.
               </p>
             </div>
 
             <ul className="mt-6 grid list-none gap-4 sm:grid-cols-3">
-              {pvsaTiers.map((tier) => (
+              {[
+                { step: "1", title: "Log it", body: "Hours, cards, and a photo, from your account." },
+                { step: "2", title: "We check it", body: "A real person reviews every entry." },
+                { step: "3", title: "Ask for it", body: "Request a certificate whenever you need one." },
+              ].map((item) => (
                 <Card
                   as="li"
-                  key={tier.name}
-                  seed={tier.name}
+                  key={item.step}
+                  seed={item.title}
                   tone="cream"
                   className="flex flex-col items-center gap-1 px-4 py-6 text-center"
                 >
                   <p className="font-display text-4xl leading-none font-bold text-red-deep">
-                    {tier.hours}
+                    {item.step}
                   </p>
-                  <p className="font-hand text-lg text-brown">hours</p>
-                  <p className="mt-1 font-display text-lg font-bold text-berry">{tier.name}</p>
+                  <p className="mt-1 font-display text-lg font-bold text-berry">{item.title}</p>
+                  <p className="mt-1 text-sm text-brown-mid">{item.body}</p>
                 </Card>
               ))}
             </ul>
 
-            <div className="mt-6 flex flex-col gap-3 text-brown-mid">
-              <p>
-                <strong className="font-display text-berry">One caution:</strong> thresholds vary by
-                age bracket and by year, so treat these as a guide. We confirm the current numbers
-                with you before anything gets submitted.
-              </p>
-              <p>
-                We also can&apos;t hand out awards ourselves — no volunteer group can. What we do is
-                track your hours, certify that we saw the work, and help with the paperwork.
-              </p>
-            </div>
           </div>
         </div>
       </Section>
@@ -338,12 +346,18 @@ export default function VolunteerPage() {
         <SectionHeading
           eyebrow="Sign up · log hours"
           title="Tell us what you did"
-          subtitle="New here? Fill this in and leave the hours at zero. Already made something? Add your hours and a photo."
+          subtitle="Hours are logged from your account, so we know whose they are and can put your name on a certificate."
         />
 
-        <Card tone="paper" seed="volunteer-form" className="mt-10 px-5 py-8 sm:px-9 sm:py-10">
-          <VolunteerForm />
-        </Card>
+        <div className="mt-10">
+          <SignInPrompt
+            signedIn={signedIn}
+            title="Logging hours needs an account"
+            reason="We can only certify hours we can tie to a person — that's what lets us put your name, your hours and the dates on a certificate you can hand to a school."
+            href="/account/hours"
+            cta="Log your hours"
+          />
+        </div>
 
         <p className="mt-6 text-center text-sm text-brown-mid">
           Trouble with the form? Email us at{" "}

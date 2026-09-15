@@ -193,7 +193,7 @@ export function OpenBook({ title, ...props }: IllustrationProps) {
   );
 }
 
-/** Award ribbon — the PVSA / recognition callout. */
+/** Award ribbon — used for the certificate / recognition callout. */
 export function AwardRibbon({ title, ...props }: IllustrationProps) {
   return (
     <svg viewBox="0 0 100 130" {...a11y(title)} {...props}>

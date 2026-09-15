@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 import { SubmitForm } from "@/components/blog/SubmitForm";
+import { SignInPrompt } from "@/components/account/SignInPrompt";
+import { getVolunteer, isGuardianAccount } from "@/lib/volunteer-auth";
 import { HeartRule, TornEdge } from "@/components/illustrations/Dividers";
 import { CheckMark, Squiggle } from "@/components/illustrations/Doodles";
 import { Crayon, Envelope, OpenBook, PaperPlane } from "@/components/illustrations/Objects";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Alert } from "@/components/ui/Feedback";
 import { Section, SectionHeading, sectionHex } from "@/components/ui/Section";
 import { blogCategories, contact } from "@/lib/site";
 
@@ -73,7 +77,10 @@ const steps = [
   },
 ];
 
-export default function SubmitStoryPage() {
+export default async function SubmitStoryPage() {
+  const volunteer = await getVolunteer();
+  const guardian = isGuardianAccount(volunteer);
+
   return (
     <>
       <PageHeader
@@ -189,9 +196,41 @@ export default function SubmitStoryPage() {
           level={2}
         />
 
-        <Card tone="paper" seed="story-form" className="mt-10 p-6 sm:p-9">
-          <SubmitForm />
-        </Card>
+        {volunteer ? (
+          guardian ? (
+            <Alert tone="note" title="Not from this account" className="mt-10">
+              <p>
+                This account is looked after by a parent or guardian for a volunteer under 13.
+                Publishing a child&apos;s writing under their name needs a different kind of
+                permission than an account can carry, so we don&apos;t take story submissions here.
+              </p>
+              <p className="mt-2">
+                Card-making hours are very welcome —{" "}
+                <Link
+                  className="font-bold text-red-deep underline decoration-pink-deep decoration-2 underline-offset-4"
+                  href="/account/hours"
+                >
+                  log them here
+                </Link>
+                .
+              </p>
+            </Alert>
+          ) : (
+            <Card tone="paper" seed="story-form" className="mt-10 p-6 sm:p-9">
+              <SubmitForm />
+            </Card>
+          )
+        ) : (
+          <div className="mt-10">
+            <SignInPrompt
+              signedIn={false}
+              title="Sending a story needs an account"
+              reason="So we can email you about edits, so nothing is published without your say-so, and so you can withdraw it later if you change your mind."
+              href="/blog/submit"
+              cta="Write your story"
+            />
+          </div>
+        )}
       </Section>
     </>
   );

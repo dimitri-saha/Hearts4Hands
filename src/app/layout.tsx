@@ -44,7 +44,8 @@ export const metadata: Metadata = {
     "handmade cards",
     "cancer research",
     "student volunteering",
-    "Presidential Volunteer Service Award",
+    "volunteer certificate",
+    "student service hours",
   ],
   openGraph: {
     type: "website",

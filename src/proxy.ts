@@ -2,14 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 /**
- * Refreshes the Supabase auth cookie on admin routes.
+ * Refreshes the Supabase auth cookie on signed-in routes.
  *
  * Next 16 renamed the `middleware` convention to `proxy`; behaviour is
  * unchanged.
  *
- * Without this, an editor's session silently expires mid-review and the next
- * server action bounces them to the login screen. Scoped to /admin so public
- * pages stay fully static.
+ * Without this, a session silently expires mid-task and the next server action
+ * bounces the user to a login screen. Scoped to the two signed-in areas so the
+ * public marketing pages stay fully static.
  */
 export default async function proxy(request: NextRequest) {
   const response = NextResponse.next({ request });
@@ -36,5 +36,5 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/account/:path*"],
 };

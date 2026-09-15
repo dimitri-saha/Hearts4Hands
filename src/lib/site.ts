@@ -13,7 +13,15 @@ export const site = {
   tagline: "Creativity is a form of courage.",
   description:
     "Hearts4Hands is a student-led volunteer initiative making handmade cards for kids in hospitals, sharing stories about cancer, and raising funds for research — one colorful act of kindness at a time.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://hearts4hands.org",
+  /**
+   * Canonical origin, no trailing slash.
+   *
+   * Used for canonical URLs, the sitemap, OG images, and — critically — the
+   * `emailRedirectTo` on every auth email. If this doesn't match a pattern in
+   * Supabase's Redirect URLs list, magic links and password resets fail with
+   * no visible error, so `www` vs apex has to be exactly right.
+   */
+  url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.hearts4hands.org").replace(/\/+$/, ""),
   locale: "en_US",
 } as const;
 
@@ -114,6 +122,33 @@ export function categoryLabel(value: string) {
   return blogCategories.find((c) => c.value === value)?.label ?? "Story";
 }
 
+/**
+ * Age brackets on the volunteer form.
+ *
+ * Required, not optional, because the answer changes what the form asks for.
+ * Anyone under 13 is signed up by a parent, guardian, or teacher instead —
+ * see UNDER_13 below.
+ */
+export const ageGroups = [
+  "Under 13",
+  "13 to 15",
+  "16 to 17",
+  "18 to 24",
+  "25 or older",
+] as const;
+
+/**
+ * The bracket that switches the form into guardian mode.
+ *
+ * US COPPA applies once a service knowingly collects personal information —
+ * name, email, photos — from a child under 13, and requires verifiable
+ * parental consent first; a tickbox a child can tick themselves is explicitly
+ * not that. The UK/EU equivalent is GDPR Article 8. So we don't collect a
+ * under-13's details at all: the adult submitting becomes the contact, and the
+ * child's name, email, and school are never asked for or stored.
+ */
+export const UNDER_13 = "Under 13" as const;
+
 /** Ways to volunteer, shown on the Volunteer page and the home page. */
 export const volunteerActivities = [
   {
@@ -143,16 +178,6 @@ export const volunteerActivities = [
 ] as const;
 
 export type VolunteerActivity = (typeof volunteerActivities)[number]["value"];
-
-/**
- * Presidential Volunteer Service Award hour thresholds (teen bracket, annual).
- * Shown on the Volunteer page so students know what they are working toward.
- */
-export const pvsaTiers = [
-  { name: "Bronze", hours: 50 },
-  { name: "Silver", hours: 75 },
-  { name: "Gold", hours: 100 },
-] as const;
 
 /** Editable in-repo content — no CMS needed for the About page. */
 export const team = [

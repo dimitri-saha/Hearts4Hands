@@ -3,12 +3,15 @@ import { z } from "zod";
 import {
   ACCEPTED_IMAGE_TYPES,
   MAX_UPLOAD_BYTES,
+  UNDER_13,
+  ageGroups,
   blogCategories,
   volunteerActivities,
 } from "./site";
 
 const categoryValues = blogCategories.map((c) => c.value) as [string, ...string[]];
 const activityValues = volunteerActivities.map((a) => a.value) as [string, ...string[]];
+const ageGroupValues = [...ageGroups] as unknown as [string, ...string[]];
 
 /** Collapses whitespace and trims — form values arrive with stray newlines. */
 const text = (min: number, max: number, label: string) =>
@@ -62,23 +65,46 @@ export const MIN_FILL_MS = 2500;
 
 // --- Volunteer ---------------------------------------------------------------
 
-export const volunteerSchema = antiSpamSchema.extend({
-  fullName: text(2, 120, "Your name"),
-  email,
-  ageGroup: optionalText(40),
-  country: text(2, 100, "Country"),
-  state: optionalText(100),
-  city: optionalText(100),
-  school: optionalText(140),
+/** True when an hour entry was submitted by an adult for a child under 13. */
+export function isGuardianSubmission(ageGroup: string | null | undefined) {
+  return ageGroup === UNDER_13;
+}
+
+/**
+ * The anonymous public volunteer form is gone — hours are logged from an
+ * account now, via `logHoursSchema` above, so identity comes from the session
+ * rather than from whatever someone typed. `validateProofFile` is still shared.
+ */
+
+export function validateProofFile(file: File | null): string | null {
+  if (!file || file.size === 0) return null;
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return `That file is ${(file.size / 1024 / 1024).toFixed(1)} MB — please keep uploads under 8 MB.`;
+  }
+  if (!ACCEPTED_IMAGE_TYPES.includes(file.type as (typeof ACCEPTED_IMAGE_TYPES)[number])) {
+    return "Please upload a photo (JPG, PNG, WEBP, HEIC) or a PDF.";
+  }
+  return null;
+}
+
+
+/**
+ * Logging hours from inside an account.
+ *
+ * Much shorter than the old public form: name, email, and country already live
+ * on the profile, so asking again would be both annoying and a chance for the
+ * two to disagree. Consent isn't re-collected either — it was given once when
+ * the account was created.
+ */
+export const logHoursSchema = antiSpamSchema.extend({
   activities: z
     .array(z.enum(activityValues))
-    .min(1, "Pick at least one way you'd like to help.")
+    .min(1, "Pick at least one thing you did.")
     .max(activityValues.length),
   hours: z.coerce
     .number({ error: "Hours must be a number." })
     .min(0, "Hours can't be negative.")
-    .max(2000, "That's more hours than there are in the year — please double-check.")
-    .default(0),
+    .max(2000, "That's more hours than there are in the year — please double-check."),
   cardsMade: z.coerce
     .number({ error: "Cards made must be a number." })
     .int("Please enter a whole number of cards.")
@@ -99,23 +125,16 @@ export const volunteerSchema = antiSpamSchema.extend({
     .transform((v) => (v.length ? v : null))
     .nullable()
     .catch(null),
-  consent: z
-    .union([z.literal("on"), z.literal("true"), z.literal(true)])
-    .refine(Boolean, "Please confirm before submitting."),
+  groupId: z
+    .string()
+    .trim()
+    .transform((v) => (v.length ? v : null))
+    .nullable()
+    .catch(null),
+}).refine((d) => d.hours > 0 || d.cardsMade > 0, {
+  error: "Add some hours or some cards — otherwise there's nothing to log.",
+  path: ["hours"],
 });
-
-export type VolunteerInput = z.infer<typeof volunteerSchema>;
-
-export function validateProofFile(file: File | null): string | null {
-  if (!file || file.size === 0) return null;
-  if (file.size > MAX_UPLOAD_BYTES) {
-    return `That file is ${(file.size / 1024 / 1024).toFixed(1)} MB — please keep uploads under 8 MB.`;
-  }
-  if (!ACCEPTED_IMAGE_TYPES.includes(file.type as (typeof ACCEPTED_IMAGE_TYPES)[number])) {
-    return "Please upload a photo (JPG, PNG, WEBP, HEIC) or a PDF.";
-  }
-  return null;
-}
 
 // --- Blog submission ---------------------------------------------------------
 
@@ -154,6 +173,66 @@ export const contactSchema = antiSpamSchema.extend({
 });
 
 export type ContactInput = z.infer<typeof contactSchema>;
+
+
+// --- Accounts ----------------------------------------------------------------
+
+/**
+ * Sign-up always sets a password.
+ *
+ * Magic links are offered at *login*, not sign-up: `signInWithOtp` doesn't
+ * return a user id until the link is clicked, so there'd be nowhere to attach
+ * the profile (name, age bracket) collected on this form. Setting a password
+ * once and then logging in either way keeps both options without a
+ * half-created account in between.
+ */
+export const signUpSchema = antiSpamSchema.extend({
+  fullName: text(2, 120, "The volunteer's name"),
+  email,
+  password: z
+    .string()
+    .min(10, "Please use at least 10 characters.")
+    .max(200, "That password is too long."),
+  ageGroup: z.enum(ageGroupValues, { error: "Please choose an age range." }),
+  country: text(2, 100, "Country"),
+  terms: z
+    .union([z.literal("on"), z.literal("true"), z.literal(true)])
+    .refine(Boolean, "Please accept the terms to create an account."),
+});
+
+export const loginSchema = antiSpamSchema.extend({
+  email,
+  password: z.string().min(1, "Please enter your password.").max(200),
+});
+
+export const magicLinkSchema = antiSpamSchema.extend({ email });
+
+export const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(10, "Please use at least 10 characters.")
+      .max(200, "That password is too long."),
+    confirm: z.string(),
+  })
+  .refine((d) => d.password === d.confirm, {
+    error: "Those two passwords don't match.",
+    path: ["confirm"],
+  });
+
+// --- Groups ------------------------------------------------------------------
+
+export const createGroupSchema = z.object({
+  name: text(2, 120, "A club name"),
+  organisation: optionalText(120),
+});
+
+export const joinGroupSchema = z.object({
+  code: z
+    .string()
+    .transform((v) => v.toUpperCase().replace(/[^A-Z0-9]/g, ""))
+    .pipe(z.string().min(4, "Please enter the invite code.").max(12)),
+});
 
 // --- Admin -------------------------------------------------------------------
 

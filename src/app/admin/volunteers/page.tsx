@@ -14,8 +14,9 @@ import {
   StatusBadge,
 } from "@/components/admin";
 import { requireAdmin } from "@/lib/auth";
-import { pvsaTiers, volunteerActivities } from "@/lib/site";
+import { volunteerActivities } from "@/lib/site";
 import { getServiceClient } from "@/lib/supabase/server";
+import { isGuardianSubmission } from "@/lib/validation";
 import type { SubmissionStatus, VolunteerSignup } from "@/lib/supabase/types";
 import { formatDate, formatNumber } from "@/lib/utils";
 
@@ -47,13 +48,6 @@ function activityLabel(value: string) {
 
 function locationOf(row: VolunteerSignup) {
   return [row.city, row.state, row.country].filter(Boolean).join(", ") || "Not given";
-}
-
-/** Highest PVSA tier this hour total clears, or null. */
-function tierFor(hours: number) {
-  let hit: (typeof pvsaTiers)[number] | null = null;
-  for (const tier of pvsaTiers) if (hours >= tier.hours) hit = tier;
-  return hit;
 }
 
 export default async function AdminVolunteersPage({
@@ -134,9 +128,11 @@ export default async function AdminVolunteersPage({
     else byVolunteer.set(key, { name: row.full_name, hours: row.hours ?? 0 });
   }
 
-  const eligible = [...byVolunteer.entries()]
-    .map(([email, v]) => ({ email, ...v, tier: tierFor(v.hours) }))
-    .filter((v) => v.tier !== null)
+  // Approved hours per volunteer — the figure a certificate would be issued
+  // against. No thresholds: we issue our own certificate, not a graded award.
+  const approvedTotals = [...byVolunteer.entries()]
+    .map(([email, v]) => ({ email, ...v }))
+    .filter((v) => v.hours > 0)
     .sort((a, b) => b.hours - a.hours);
 
   // One signed URL per row that has a proof file. Batched: 40 serial round-trips
@@ -210,19 +206,18 @@ export default async function AdminVolunteersPage({
         </p>
       </section>
 
-      {/* --- Award tracking helper ------------------------------------------ */}
+      {/* --- Approved hours per volunteer ---------------------------------- */}
       <AdminCard
-        title="Award tracking"
-        description="Who has crossed a Presidential Volunteer Service Award hour threshold, using approved hours only."
+        title="Approved hours by volunteer"
+        description="What each person has banked, counting approved entries only. This is the figure a certificate is issued against."
       >
-        {eligible.length === 0 ? (
+        {approvedTotals.length === 0 ? (
           <p className="text-[0.95rem] text-brown-mid">
-            Nobody has reached {pvsaTiers[0].hours} approved hours yet. Thresholds:{" "}
-            {pvsaTiers.map((t) => `${t.name} ${t.hours}h`).join(" · ")}.
+            No approved hours yet. Approve an entry above and it will show up here.
           </p>
         ) : (
           <ul className="flex list-none flex-col gap-2">
-            {eligible.map((v) => (
+            {approvedTotals.map((v) => (
               <li
                 key={v.email}
                 className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-brown-faint/60 pb-2 last:border-b-0 last:pb-0"
@@ -237,21 +232,15 @@ export default async function AdminVolunteersPage({
                   </a>
                 </span>
                 <span className="text-[0.95rem] text-brown tabular-nums">
-                  {formatNumber(Math.round(v.hours * 10) / 10)} hours —{" "}
-                  <span className="font-display font-bold">
-                    may be eligible for {v.tier?.name}
-                  </span>
+                  {formatNumber(Math.round(v.hours * 10) / 10)} approved hours
                 </span>
               </li>
             ))}
           </ul>
         )}
         <p className="mt-4 border-t border-brown-faint/70 pt-3 text-sm text-brown-mid">
-          <span className="font-display font-bold text-berry">Not an official determination.</span>{" "}
-          PVSA thresholds vary by age bracket and change from year to year, and the award has its
-          own service period and eligibility rules. Treat this as a shortlist to check by hand
-          against the current official criteria before certifying or submitting anything. The
-          numbers shown here are the ones typed in by volunteers, as approved on this page.
+          These are the hours volunteers entered themselves, as approved on this page. Pending and
+          not-approved entries are excluded.
         </p>
       </AdminCard>
 
@@ -382,7 +371,15 @@ export default async function AdminVolunteersPage({
                     <AdminDetail label="Activity date">
                       {row.activity_date ? formatDate(row.activity_date) : "Not given"}
                     </AdminDetail>
-                    <AdminDetail label="Age group">{row.age_group ?? "Not given"}</AdminDetail>
+                    <AdminDetail label="Age group">
+                      {row.age_group ?? "Not given"}
+                      {isGuardianSubmission(row.age_group) ? (
+                        <span className="mt-1 block text-sm text-brown-mid">
+                          Submitted by a parent, guardian, or teacher — the name and email above
+                          are the adult&apos;s, not the child&apos;s.
+                        </span>
+                      ) : null}
+                    </AdminDetail>
 
                     <AdminDetail label="Helping with" className="sm:col-span-2">
                       {row.activities?.length

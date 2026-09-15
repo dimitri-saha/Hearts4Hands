@@ -15,6 +15,8 @@ import type { NextConfig } from "next";
  *   - `*.supabase.co` — signed URLs for volunteer proof photos, which admins
  *     open from the browser.
  */
+const isDev = process.env.NODE_ENV === "development";
+
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -25,9 +27,25 @@ const csp = [
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
-  "connect-src 'self' https://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com",
-  "upgrade-insecure-requests",
-].join("; ");
+  [
+    "connect-src 'self'",
+    "https://*.supabase.co",
+    "https://va.vercel-scripts.com",
+    "https://vitals.vercel-insights.com",
+    // Dev only: Turbopack's hot-reload socket. Safari doesn't reliably treat
+    // ws:// as covered by 'self'.
+    isDev ? "ws://localhost:* http://localhost:*" : "",
+  ]
+    .filter(Boolean)
+    .join(" "),
+  // Production only. Safari applies this to localhost too and rewrites
+  // http://localhost:3000 to https://, where nothing is listening — so
+  // `npm run dev` becomes unreachable in Safari. Chrome exempts localhost,
+  // which is why it only shows up in one browser.
+  isDev ? "" : "upgrade-insecure-requests",
+]
+  .filter(Boolean)
+  .join("; ");
 
 const securityHeaders = [
   // Stop the browser second-guessing declared content types.

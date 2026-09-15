@@ -187,7 +187,7 @@ supabase/migrations/0001_init.sql
 ```
 
 **`src/lib/site.ts` is the content file.** Nav labels, donation URLs, contact emails, team bios,
-blog categories, volunteer activities, PVSA tiers, fallback stats. A non-developer changing copy
+blog categories, volunteer activities, age brackets, fallback stats. A non-developer changing copy
 should be able to work almost entirely in there. Put new constants there, not inline in a page.
 
 ---
@@ -344,3 +344,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `'unsafe-inline'` for scripts on purpose: the strict alternative needs per-request nonces from
   middleware, which would force dynamic rendering site-wide. If you add a third-party script or
   embed, add its origin to `script-src`/`connect-src` or it will be silently blocked.
+- **Under-13 sign-ups are guardian-submitted, by design.** Picking `UNDER_13` (in `site.ts`)
+  on the volunteer form relabels name/email as the adult's, hides the school field, and changes
+  the consent wording. It is enforced server-side too: `volunteerSchemaGuarded` strips `school`
+  so a crafted POST can't store it. US COPPA is triggered by *actual knowledge* that you're
+  collecting a under-13's personal data — and an age dropdown creates exactly that knowledge —
+  so the fix is to not collect it, rather than to add a tickbox a child can tick. `ageGroup` is
+  required for this reason; making it optional would reopen the hole.

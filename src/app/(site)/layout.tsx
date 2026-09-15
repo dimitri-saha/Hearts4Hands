@@ -1,3 +1,4 @@
+import { getVolunteer } from "@/lib/volunteer-auth";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 
@@ -5,7 +6,11 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
  * Chrome for every public page. Kept out of the root layout so `/admin` can
  * render its own, denser workspace shell instead.
  */
-export default function SiteLayout({ children }: { children: React.ReactNode }) {
+export default async function SiteLayout({ children }: { children: React.ReactNode }) {
+  // Only ever a boolean past this point — the header is a client component and
+  // has no business receiving an email address or profile.
+  const signedIn = Boolean(await getVolunteer());
+
   return (
     <>
       <a
@@ -15,7 +20,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         Skip to content
       </a>
 
-      <SiteHeader />
+      <SiteHeader signedIn={signedIn} />
       <main id="main" className="relative z-10 flex-1">
         {children}
       </main>

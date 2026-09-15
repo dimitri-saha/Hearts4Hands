@@ -9,7 +9,12 @@ import { mainNav } from "@/lib/site";
 import { Button } from "@/components/ui/Button";
 import { Logo } from "./Logo";
 
-export function SiteHeader() {
+/**
+ * `signedIn` is resolved by the server layout and passed down — this is a
+ * client component (mobile drawer, active-link state) so it can't read the
+ * session itself.
+ */
+export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -93,6 +98,12 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <Link
+            href={signedIn ? "/account" : "/login"}
+            className="hidden rough-pill px-3 py-2 font-display text-[1.02rem] font-bold text-brown transition-colors hover:bg-blush/70 hover:text-red-deep lg:inline-flex"
+          >
+            {signedIn ? "My account" : "Sign in"}
+          </Link>
           <Button href="/donate" size="sm" className="hidden sm:inline-flex">
             Donate
             <HeartGlyph />
@@ -148,6 +159,12 @@ export function SiteHeader() {
               </Link>
             ),
           )}
+          <Link
+            href={signedIn ? "/account" : "/login"}
+            className="rough-2 border-[2.5px] border-brown/40 bg-paper px-4 py-3 font-display text-lg font-bold text-brown hover:border-red"
+          >
+            {signedIn ? "My account" : "Sign in"}
+          </Link>
           <Link
             href="/volunteer"
             className="mt-1 rough-pill border-[2.5px] border-brown bg-red px-4 py-3 text-center font-display text-lg font-bold text-paper sticker-shadow"
