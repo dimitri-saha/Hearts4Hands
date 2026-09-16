@@ -69,13 +69,35 @@ export default async function AdminEmailsPage() {
                   </Tag>
                 </div>
 
-                {/* sandbox: these render untrusted-ish HTML in an isolated frame */}
+                {/*
+                  srcDoc, not src. The site sends `X-Frame-Options: DENY` and
+                  CSP `frame-ancestors 'none'` on every route, which block
+                  framing even from the same origin — a src iframe here shows
+                  "refused to connect". srcDoc needs no fetch, so nothing is
+                  framed: the HTML is handed straight to the iframe, which then
+                  inherits this page's CSP and renders it.
+
+                  `sandbox=""` keeps it inert — no scripts, opaque origin.
+                */}
                 <iframe
-                  src={`/admin/emails/preview/${sample.id}`}
+                  srcDoc={built.html}
                   title={`${sample.label} preview`}
                   sandbox=""
                   className="h-[620px] w-full border-0 bg-blush"
                 />
+
+                <div className="border-t-2 border-dashed border-brown-faint px-5 py-3">
+                  {/* A top-level navigation isn't framing, so X-Frame-Options
+                      doesn't apply — this opens full size just fine. */}
+                  <a
+                    href={`/admin/emails/preview/${sample.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-display text-sm font-bold text-red-deep underline decoration-pink-deep decoration-2 underline-offset-4 hover:text-berry"
+                  >
+                    Open full size in a new tab
+                  </a>
+                </div>
 
                 <details className="border-t-2 border-dashed border-brown-faint px-5 py-3">
                   <summary className="cursor-pointer list-none font-display text-sm font-bold text-brown-mid marker:content-none hover:text-berry">
