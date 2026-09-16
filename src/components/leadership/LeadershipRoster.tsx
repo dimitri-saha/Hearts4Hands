@@ -9,8 +9,8 @@ import { leadershipTeam } from "@/lib/site";
  * Current leadership.
  *
  * The portrait frame keeps a fixed 4:5 box whether it holds a real headshot or
- * an illustrated stand-in, so a roster where only half the people have sent a
- * photo still lines up.
+ * a monogram, so a roster where only some people have sent a photo still lines
+ * up.
  */
 export function LeadershipRoster() {
   return (
@@ -29,7 +29,8 @@ export function LeadershipRoster() {
                     src={person.photo}
                     alt={`${person.name}, ${person.role}`}
                     fill
-                    sizes="(min-width: 1024px) 20rem, (min-width: 640px) 45vw, 90vw"
+                    sizes="(min-width: 1024px) 22rem, (min-width: 640px) 45vw, 90vw"
+                    quality={90}
                     className="object-cover"
                   />
                 ) : (
