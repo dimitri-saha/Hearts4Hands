@@ -51,7 +51,26 @@ const FONTS = {
   hand: fontFile("PatrickHand-Regular.ttf"),
 };
 
-const BEAR = join(process.cwd(), "public/bears/bear_card.png");
+/**
+ * A print copy of the logo, cropped to its content.
+ *
+ * `public/logo.jpeg` is the canonical logo but carries a wide pink margin —
+ * placed on the certificate at a sensible size, the bear inside it came out
+ * barely legible. This is the same artwork with the empty ground trimmed off
+ * and scaled for print, so the size on the page is the size of the logo.
+ */
+const LOGO = join(process.cwd(), "public/logo-print.jpg");
+
+/**
+ * Signature image slot.
+ *
+ * A scanned signature is wider than it is tall, so the slot is sized to the
+ * rule it sits on (240pt) with a little air either side. Anything handed in is
+ * scaled to fit inside this box and centred, so an image that is the wrong
+ * shape gets smaller rather than distorted.
+ */
+const SIG_MAX_W = 230;
+const SIG_MAX_H = 48;
 
 /** Horizontally centred text. pdf-lib positions from the left, so measure first. */
 function centre(page: PDFPage, text: string, font: PDFFont, size: number, y: number, color = c.brown) {
@@ -102,32 +121,35 @@ export async function buildCertificatePdf(cert: Certificate): Promise<Uint8Array
     borderColor: c.brown, borderWidth: 2.5,
   });
 
-  // ------------------------------------------------------------------ bear
+  // ------------------------------------------------------------------ logo
+  // The full logo, bear and wordmark together. It carries its own pink ground
+  // (it's a JPEG, so there's no transparency to knock out), which is why there
+  // is no separate wordmark line below it — the name would otherwise appear
+  // twice, once drawn and once typeset.
   try {
-    const bear = await doc.embedPng(readFileSync(BEAR));
-    const h = 104;
-    const w = (bear.width / bear.height) * h;
-    page.drawImage(bear, { x: (W - w) / 2, y: H - 168, width: w, height: h });
+    const logo = await doc.embedJpg(readFileSync(LOGO));
+    const h = 124;
+    const w = (logo.width / logo.height) * h;
+    page.drawImage(logo, { x: (W - w) / 2, y: H - 176, width: w, height: h });
   } catch {
     // A missing image must not cost somebody their certificate.
   }
 
   // ----------------------------------------------------------------- title
-  centre(page, site.shortName, hand, 26, H - 200, c.red);
-  centre(page, "CERTIFICATE OF VOLUNTEER SERVICE", bold, 25, H - 240, c.berry);
+  centre(page, "CERTIFICATE OF VOLUNTEER SERVICE", bold, 25, H - 208, c.berry);
 
   page.drawLine({
-    start: { x: W / 2 - 110, y: H - 258 },
-    end: { x: W / 2 + 110, y: H - 258 },
+    start: { x: W / 2 - 110, y: H - 226 },
+    end: { x: W / 2 + 110, y: H - 226 },
     thickness: 2,
     color: c.pinkDeep,
   });
 
   // ------------------------------------------------------------------ name
-  centre(page, "This certifies that", regular, 15, H - 292, c.brownMid);
+  centre(page, "This certifies that", regular, 15, H - 256, c.brownMid);
 
   const name = cert.full_name.trim() || "A Hearts4Hands volunteer";
-  centre(page, name, bold, fitSize(name, bold, 44, W - 180), H - 348, c.brown);
+  centre(page, name, bold, fitSize(name, bold, 44, W - 180), H - 310, c.brown);
 
   // ------------------------------------------------------------ the claim
   const hours = formatNumber(Number(cert.hours));
@@ -137,26 +159,44 @@ export async function buildCertificatePdf(cert: Certificate): Promise<Uint8Array
       ? `has volunteered ${hours} ${Number(cert.hours) === 1 ? "hour" : "hours"} and made ${cards} ${cert.cards === 1 ? "card" : "cards"}`
       : `has volunteered ${hours} ${Number(cert.hours) === 1 ? "hour" : "hours"}`;
 
-  centre(page, claim, regular, fitSize(claim, regular, 19, W - 160, 13), H - 388, c.brown);
-  centre(page, "for children in hospitals", regular, 19, H - 414, c.brown);
+  centre(page, claim, regular, fitSize(claim, regular, 19, W - 160, 13), H - 348, c.brown);
+  centre(page, "for children in hospitals", regular, 19, H - 374, c.brown);
 
   centre(
     page,
     `as of ${formatDate(cert.issued_at)}`,
     hand,
     17,
-    H - 446,
+    H - 406,
     c.brownMid,
   );
 
   // ------------------------------------------------------------ signatures
-  const sigY = 132;
+  const sigY = 140;
   const slots = certificateSignatories.length || 1;
   const slotWidth = (W - 200) / slots;
 
-  certificateSignatories.forEach((person, i) => {
+  for (const [i, person] of certificateSignatories.entries()) {
     const cx = 100 + slotWidth * i + slotWidth / 2;
     const lineHalf = Math.min(slotWidth / 2 - 24, 120);
+
+    // The signature itself, when one has been supplied. It sits on the rule
+    // rather than above it, the way a real one would.
+    if (person.signature) {
+      try {
+        const file = readFileSync(join(process.cwd(), "public", person.signature));
+        const img = person.signature.toLowerCase().endsWith(".png")
+          ? await doc.embedPng(file)
+          : await doc.embedJpg(file);
+        const scale = Math.min(SIG_MAX_W / img.width, SIG_MAX_H / img.height, 1);
+        const sw = img.width * scale;
+        const sh = img.height * scale;
+        page.drawImage(img, { x: cx - sw / 2, y: sigY + 5, width: sw, height: sh });
+      } catch {
+        // A missing or unreadable signature leaves an empty rule, which is
+        // still a usable certificate. It must never fail the download.
+      }
+    }
 
     page.drawLine({
       start: { x: cx - lineHalf, y: sigY },
@@ -182,7 +222,7 @@ export async function buildCertificatePdf(cert: Certificate): Promise<Uint8Array
       font: regular,
       color: c.brownMid,
     });
-  });
+  }
 
   // ------------------------------------------------------- verification
   // The line that makes the document checkable rather than decorative.

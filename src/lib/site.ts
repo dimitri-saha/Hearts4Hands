@@ -301,10 +301,23 @@ export const leadershipTeam: LeaderProfile[] = [
  *
  * TODO: these are placeholders until the club presidents' details are in.
  */
-export const certificateSignatories = [
+export type Signatory = {
+  name: string;
+  role: string;
+  /**
+   * Path to a scanned signature inside `public/`, e.g. "signatures/ira.png".
+   * Leave it off and the certificate prints an empty rule, which is still a
+   * usable document — so an unsigned slot never blocks a download.
+   */
+  signature?: string;
+};
+
+export const certificateSignatories: Signatory[] = [
+  // TODO: real names, roles, and `signature: "signatures/<file>.png"` once
+  // the presidents' scans are in. See public/signatures/README.md.
   { name: "Signature pending", role: "Co-President, Hearts4Hands" },
   { name: "Signature pending", role: "Co-President, Hearts4Hands" },
-] as const;
+];
 
 /** Editable in-repo content — no CMS needed for the About page. */
 export const milestones = [

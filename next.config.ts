@@ -72,6 +72,18 @@ const nextConfig: NextConfig = {
   // Don't advertise the framework.
   poweredByHeader: false,
 
+  /**
+   * The certificate PDF reads fonts and images off disk at request time.
+   * Next traces literal `process.cwd()` paths automatically, but the signature
+   * files are named in `certificateSignatories`, so the path is only known at
+   * runtime and tracing cannot see them. Without this they are absent from the
+   * deployed function and every certificate silently prints an empty rule —
+   * which works locally, where the whole repo is on disk.
+   */
+  outputFileTracingIncludes: {
+    "/account/certificates/[code]": ["./src/fonts/**/*", "./public/signatures/**/*"],
+  },
+
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
