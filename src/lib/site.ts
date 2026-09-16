@@ -313,10 +313,16 @@ export type Signatory = {
 };
 
 export const certificateSignatories: Signatory[] = [
-  // TODO: real names, roles, and `signature: "signatures/<file>.png"` once
-  // the presidents' scans are in. See public/signatures/README.md.
-  { name: "Signature pending", role: "Co-President, Hearts4Hands" },
-  { name: "Signature pending", role: "Co-President, Hearts4Hands" },
+  {
+    name: "Ira Verma",
+    role: "Co-President, Hearts4Hands",
+    signature: "signatures/Ira_Verma.png",
+  },
+  {
+    name: "Preethika Prabhakaran",
+    role: "Co-President, Hearts4Hands",
+    signature: "signatures/Preethika_Prabhakaran.png",
+  },
 ];
 
 /** Editable in-repo content — no CMS needed for the About page. */
