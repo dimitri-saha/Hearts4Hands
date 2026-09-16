@@ -76,13 +76,15 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
               </Alert>
             ) : null}
 
-            <p className="font-hand text-lg text-brown-mid">This certifies that</p>
+            <p className="font-hand text-lg text-brown-mid">
+              {cert.kind === "club" ? "This certifies that the members of" : "This certifies that"}
+            </p>
             <p className="mt-1 font-display text-3xl font-bold text-brown sm:text-4xl">
-              {cert.full_name}
+              {cert.subject_name}
             </p>
 
             <p className="mt-4 text-lg text-brown">
-              has volunteered{" "}
+              {cert.kind === "club" ? "together volunteered " : "has volunteered "}
               <strong className="font-display text-berry">
                 {formatNumber(Number(cert.hours))} {Number(cert.hours) === 1 ? "hour" : "hours"}
               </strong>
@@ -97,6 +99,18 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
               ) : null}{" "}
               for children in hospitals.
             </p>
+
+            {cert.kind === "club" ? (
+              <p className="mt-3 text-sm text-brown-mid">
+                Across{" "}
+                <strong className="font-display text-berry">
+                  {formatNumber(cert.volunteer_count)}{" "}
+                  {cert.volunteer_count === 1 ? "volunteer" : "volunteers"}
+                </strong>
+                . This is the club&apos;s combined total — its members also hold their own
+                certificates for the same hours, so the two should not be added together.
+              </p>
+            ) : null}
 
             <HeartRule className="mt-6" />
 

@@ -146,30 +146,35 @@ export async function buildCertificatePdf(cert: Certificate): Promise<Uint8Array
   });
 
   // ------------------------------------------------------------------ name
+  const isClub = cert.kind === "club";
+
   centre(page, "This certifies that", regular, 15, H - 256, c.brownMid);
 
-  const name = cert.full_name.trim() || "A Hearts4Hands volunteer";
+  const name =
+    cert.subject_name.trim() || (isClub ? "A Hearts4Hands club" : "A Hearts4Hands volunteer");
   centre(page, name, bold, fitSize(name, bold, 44, W - 180), H - 310, c.brown);
 
   // ------------------------------------------------------------ the claim
   const hours = formatNumber(Number(cert.hours));
   const cards = formatNumber(cert.cards);
-  const claim =
-    cert.cards > 0
-      ? `has volunteered ${hours} ${Number(cert.hours) === 1 ? "hour" : "hours"} and made ${cards} ${cert.cards === 1 ? "card" : "cards"}`
-      : `has volunteered ${hours} ${Number(cert.hours) === 1 ? "hour" : "hours"}`;
+  const hourWord = Number(cert.hours) === 1 ? "hour" : "hours";
+  const cardPart = cert.cards > 0 ? ` and made ${cards} ${cert.cards === 1 ? "card" : "cards"}` : "";
+
+  const claim = isClub
+    ? `together volunteered ${hours} ${hourWord}${cardPart}`
+    : `has volunteered ${hours} ${hourWord}${cardPart}`;
 
   centre(page, claim, regular, fitSize(claim, regular, 19, W - 160, 13), H - 348, c.brown);
   centre(page, "for children in hospitals", regular, 19, H - 374, c.brown);
 
-  centre(
-    page,
-    `as of ${formatDate(cert.issued_at)}`,
-    hand,
-    17,
-    H - 406,
-    c.brownMid,
-  );
+  const volunteers = formatNumber(cert.volunteer_count);
+  const asOf = isClub
+    ? `across ${volunteers} ${cert.volunteer_count === 1 ? "volunteer" : "volunteers"}, as of ${formatDate(cert.issued_at)}`
+    : `as of ${formatDate(cert.issued_at)}`;
+
+  centre(page, asOf, hand, 17, H - 406, c.brownMid);
+
+
 
   // ------------------------------------------------------------ signatures
   const sigY = 140;
@@ -224,6 +229,24 @@ export async function buildCertificatePdf(cert: Certificate): Promise<Uint8Array
     });
   }
 
+  // A club's hours are the same hours its members hold personally. Saying so on
+  // the document stops a school reading a club certificate plus five personal
+  // ones as six separate contributions.
+  //
+  // It sits below the signatures rather than above them: the band above is
+  // occupied by the signature images, which are up to 48pt tall and would be
+  // written straight through.
+  if (isClub) {
+    centre(
+      page,
+      "This is the club's combined total. Its members also hold their own certificates for the same hours.",
+      regular,
+      9,
+      90,
+      c.brownSoft,
+    );
+  }
+
   // ------------------------------------------------------- verification
   // The line that makes the document checkable rather than decorative.
   const verifyUrl = `${site.url}/verify/${cert.code}`;
@@ -236,11 +259,11 @@ export async function buildCertificatePdf(cert: Certificate): Promise<Uint8Array
 /** Filename for the download. Kept ASCII-safe — Content-Disposition is fussy. */
 export function certificateFilename(cert: Certificate) {
   const slug =
-    cert.full_name
+    cert.subject_name
       .normalize("NFD")
       .replace(/[̀-ͯ]/g, "")
       .replace(/[^a-zA-Z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "")
-      .slice(0, 48) || "volunteer";
+      .slice(0, 48) || (cert.kind === "club" ? "club" : "volunteer");
   return `Hearts4Hands-certificate-${slug}.pdf`;
 }

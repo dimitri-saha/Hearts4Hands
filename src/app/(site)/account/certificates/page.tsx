@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { checkEligibility, getMyCertificates } from "@/lib/certificates";
+import {
+  checkClubEligibility,
+  checkEligibility,
+  getClubCertificates,
+  getMyCertificates,
+} from "@/lib/certificates";
+import { getMyGroups } from "@/lib/account-data";
 import { contact, site } from "@/lib/site";
 import { formatDate, formatNumber } from "@/lib/utils";
 import { requireVolunteer, volunteerName } from "@/lib/volunteer-auth";
 import { RequestCertificateForm } from "@/components/account/RequestCertificateForm";
+import { RequestClubCertificateForm } from "@/components/account/RequestClubCertificateForm";
 import { Button } from "@/components/ui/Button";
 import { Card, Tag } from "@/components/ui/Card";
 import { Alert, EmptyState } from "@/components/ui/Feedback";
@@ -22,10 +29,21 @@ const linkClass =
 export default async function CertificatesPage() {
   const volunteer = await requireVolunteer("/account/certificates");
 
-  const [certificates, eligibility] = await Promise.all([
+  const [certificates, eligibility, groups] = await Promise.all([
     getMyCertificates(volunteer.id),
     checkEligibility(volunteer.id),
+    getMyGroups(volunteer.id),
   ]);
+
+  // Only a leader can issue a club's certificate, so only a leader is offered one.
+  const ledClubs = groups.filter((g) => g.role === "leader");
+  const clubs = await Promise.all(
+    ledClubs.map(async (m) => ({
+      group: m.group,
+      certificates: await getClubCertificates(m.group.id),
+      eligibility: await checkClubEligibility(m.group.id),
+    })),
+  );
 
   const name = volunteerName(volunteer);
   const hasAny = certificates.length > 0;
@@ -102,6 +120,103 @@ export default async function CertificatesPage() {
           label={hasAny ? "Issue an updated certificate" : "Issue my certificate"}
         />
       </section>
+
+
+      {/* ------------------------------------------------------------- clubs */}
+      {clubs.length > 0 ? (
+        <section aria-labelledby="club-heading" className="flex flex-col gap-4">
+          <h2 id="club-heading" className="text-2xl">
+            {clubs.length === 1 ? "Your club's certificate" : "Your clubs' certificates"}
+          </h2>
+
+          <p className="text-brown-mid">
+            A club certificate names the club and adds up every approved hour logged under it. The
+            hours on it are the same ones your members hold personally, counted once for the club
+            — so the two shouldn&apos;t be added together.
+          </p>
+
+          {clubs.map(({ group, certificates: clubCerts, eligibility: clubEligibility }) => {
+            const current = clubCerts.find((c) => !c.revoked_at);
+            return (
+              <Card key={group.id} seed={group.id} tone="cream" className="flex flex-col gap-4 px-5 py-5">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                  <p className="font-display text-lg font-bold text-berry">{group.name}</p>
+                  {group.organisation ? (
+                    <p className="text-sm text-brown-soft">{group.organisation}</p>
+                  ) : null}
+                </div>
+
+                {clubEligibility.ok ? (
+                  <Alert tone="info">
+                    <p>
+                      Ready to certify:{" "}
+                      <strong className="font-display text-berry">
+                        {formatNumber(clubEligibility.totals.hours)}{" "}
+                        {clubEligibility.totals.hours === 1 ? "hour" : "hours"}
+                      </strong>{" "}
+                      across{" "}
+                      <strong className="font-display text-berry">
+                        {formatNumber(clubEligibility.totals.volunteers)}{" "}
+                        {clubEligibility.totals.volunteers === 1 ? "volunteer" : "volunteers"}
+                      </strong>
+                      .
+                    </p>
+                  </Alert>
+                ) : clubEligibility.reason === "nothing-new" ? (
+                  <Alert tone="note">
+                    <p>This club&apos;s latest certificate already covers everything approved.</p>
+                  </Alert>
+                ) : (
+                  <Alert tone="note">
+                    <p>
+                      Nothing approved under this club yet. Members need to pick the club when they
+                      log hours, and an admin has to check them first.
+                    </p>
+                  </Alert>
+                )}
+
+                <RequestClubCertificateForm
+                  groupId={group.id}
+                  canRequest={clubEligibility.ok}
+                  label={current ? "Issue an updated club certificate" : "Issue the club certificate"}
+                />
+
+                {clubCerts.length > 0 ? (
+                  <ul className="flex list-none flex-col gap-2">
+                    {clubCerts.map((cert, index) => {
+                      const revoked = Boolean(cert.revoked_at);
+                      return (
+                        <li
+                          key={cert.id}
+                          className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-brown-faint bg-paper px-4 py-3"
+                        >
+                          <span className="text-sm text-brown">
+                            <strong className="font-display text-berry">
+                              {formatNumber(Number(cert.hours))} hours
+                            </strong>{" "}
+                            · {formatNumber(cert.volunteer_count)} volunteers · issued{" "}
+                            {formatDate(cert.issued_at)} ·{" "}
+                            <span className="font-display font-bold">{cert.code}</span>
+                          </span>
+                          {revoked ? (
+                            <Tag tone="red">Withdrawn</Tag>
+                          ) : index === 0 ? (
+                            <Button href={`/account/certificates/${cert.code}`} size="sm">
+                              Download PDF
+                            </Button>
+                          ) : (
+                            <Tag tone="cream">Superseded</Tag>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
+              </Card>
+            );
+          })}
+        </section>
+      ) : null}
 
       {/* ------------------------------------------------------------- list */}
       <section aria-labelledby="list-heading" className="flex flex-col gap-4">

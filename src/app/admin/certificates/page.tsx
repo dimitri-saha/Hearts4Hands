@@ -47,7 +47,14 @@ export default async function AdminCertificatesPage() {
             return (
               <Card as="li" key={cert.id} seed={cert.id} className="px-5 py-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-                  <p className="font-display text-lg font-bold text-berry">{cert.full_name}</p>
+                  <p className="font-display text-lg font-bold text-berry">
+                    {cert.subject_name}
+                    {cert.kind === "club" ? (
+                      <span className="ml-2 font-body text-sm font-normal text-brown-soft">
+                        club
+                      </span>
+                    ) : null}
+                  </p>
                   <Tag tone={isRevoked ? "red" : "leaf"}>
                     {isRevoked ? "Withdrawn" : "Live"}
                   </Tag>
@@ -55,6 +62,9 @@ export default async function AdminCertificatesPage() {
 
                 <p className="mt-1 text-sm text-brown-mid">
                   {formatNumber(Number(cert.hours))} hours · {formatNumber(cert.cards)} cards ·
+                  {cert.kind === "club"
+                    ? ` ${formatNumber(cert.volunteer_count)} volunteers ·`
+                    : ""}{" "}
                   issued {formatDate(cert.issued_at)} ·{" "}
                   <span className="font-display font-bold text-brown">{cert.code}</span> ·{" "}
                   {cert.entry_ids.length} entries counted

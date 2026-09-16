@@ -27,11 +27,29 @@ export async function GET(_request: Request, ctx: { params: Promise<{ code: stri
     return new Response("No certificate with that code.", { status: 404 });
   }
 
-  // RLS already restricts the read to the owner or an admin, but say it here
-  // too — policies are OR'd, and this route must not become a way for one
-  // admin's own account to pull another volunteer's document by guessing.
-  const owned = cert.user_id === volunteer.id;
-  if (!owned && !(await getAdminUser())) {
+  // RLS already restricts the read to the owner, the club, or an admin, but say
+  // it here too — policies are OR'd, and this route must not become a way for
+  // one admin's own account to pull another volunteer's document by guessing.
+  //
+  // A club certificate belongs to the club, not to whoever happened to press
+  // the button, so any member of that club may download it.
+  let allowed = cert.user_id === volunteer.id;
+
+  if (!allowed && cert.kind === "club" && cert.group_id) {
+    const { getServiceClient } = await import("@/lib/supabase/server");
+    const client = getServiceClient();
+    if (client) {
+      const { data: membership } = await client
+        .from("group_members")
+        .select("user_id")
+        .eq("group_id", cert.group_id)
+        .eq("user_id", volunteer.id)
+        .maybeSingle();
+      allowed = Boolean(membership);
+    }
+  }
+
+  if (!allowed && !(await getAdminUser())) {
     return new Response("That isn't your certificate.", { status: 403 });
   }
 

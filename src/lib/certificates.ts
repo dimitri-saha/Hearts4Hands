@@ -1,7 +1,11 @@
 import "server-only";
 
 import { getPublicClient, getServiceClient, getSessionClient } from "./supabase/server";
-import type { Certificate, CertificateVerification } from "./supabase/types";
+import type {
+  Certificate,
+  CertificateVerification,
+  ClubTotals,
+} from "./supabase/types";
 
 /**
  * Reading and issuing certificates.
@@ -64,6 +68,7 @@ export async function getMyCertificates(userId: string): Promise<Certificate[]> 
     .from("certificates")
     .select("*")
     .eq("user_id", userId)
+    .eq("kind", "volunteer")
     .order("issued_at", { ascending: false })
     .limit(50);
 
@@ -82,6 +87,7 @@ async function getLatestCertificate(userId: string): Promise<Certificate | null>
     .from("certificates")
     .select("*")
     .eq("user_id", userId)
+    .eq("kind", "volunteer")
     .order("issued_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -136,10 +142,13 @@ export async function verifyCertificate(code: string): Promise<CertificateVerifi
 /** Issues a certificate. Service role: `user_id` comes from the session, never from input. */
 export async function issueCertificate(args: {
   userId: string;
-  fullName: string;
+  subjectName: string;
   hours: number;
   cards: number;
   entryIds: string[];
+  kind?: "volunteer" | "club";
+  groupId?: string | null;
+  volunteerCount?: number;
 }): Promise<Certificate | null> {
   const admin = getServiceClient();
   if (!admin) return null;
@@ -155,7 +164,10 @@ export async function issueCertificate(args: {
     .insert({
       code,
       user_id: args.userId,
-      full_name: args.fullName,
+      kind: args.kind ?? "volunteer",
+      subject_name: args.subjectName,
+      group_id: args.groupId ?? null,
+      volunteer_count: args.volunteerCount ?? 0,
       hours: args.hours,
       cards: args.cards,
       entry_ids: args.entryIds,
@@ -189,4 +201,88 @@ export async function getAllCertificates(): Promise<Certificate[]> {
     return [];
   }
   return data ?? [];
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Clubs                                                                     */
+/* -------------------------------------------------------------------------- */
+
+export type ClubEligibility =
+  | { ok: true; totals: ClubTotals; entryIds: string[] }
+  | { ok: false; reason: "no-approved-hours" | "nothing-new"; totals: ClubTotals };
+
+/**
+ * A club's approved totals, via a `security definer` aggregate function.
+ *
+ * Deliberately not a plain query over `volunteer_signups`: the leader is
+ * entitled to the club's total, not to a row-by-row account of who logged what.
+ * The function returns four numbers and checks membership itself.
+ */
+export async function getClubTotals(groupId: string): Promise<ClubTotals | null> {
+  const supabase = await getSessionClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc("club_approved_totals", { gid: groupId });
+  if (error) {
+    console.error("[certificates] club totals failed:", error.message);
+    return null;
+  }
+  const row = data?.[0];
+  if (!row) return null;
+  return {
+    hours: Math.round((Number(row.hours) || 0) * 10) / 10,
+    cards: Number(row.cards) || 0,
+    volunteers: Number(row.volunteers) || 0,
+    entries: Number(row.entries) || 0,
+  };
+}
+
+export async function getClubCertificates(groupId: string): Promise<Certificate[]> {
+  const supabase = await getSessionClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("certificates")
+    .select("*")
+    .eq("group_id", groupId)
+    .eq("kind", "club")
+    .order("issued_at", { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error("[certificates] club list failed:", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+/** Whether a fresh club certificate would say anything the last one didn't. */
+export async function checkClubEligibility(groupId: string): Promise<ClubEligibility> {
+  const empty: ClubTotals = { hours: 0, cards: 0, volunteers: 0, entries: 0 };
+  const totals = (await getClubTotals(groupId)) ?? empty;
+
+  if (totals.entries === 0 || totals.hours <= 0) {
+    return { ok: false, reason: "no-approved-hours", totals };
+  }
+
+  const existing = await getClubCertificates(groupId);
+  const latest = existing.find((c) => !c.revoked_at);
+  if (latest && Number(latest.hours) >= totals.hours && latest.cards >= totals.cards) {
+    return { ok: false, reason: "nothing-new", totals };
+  }
+
+  // The entry ids are an audit trail, so they go through the service role — the
+  // session client would only return the caller's own rows.
+  const admin = getServiceClient();
+  let entryIds: string[] = [];
+  if (admin) {
+    const { data } = await admin
+      .from("volunteer_signups")
+      .select("id")
+      .eq("group_id", groupId)
+      .eq("status", "approved");
+    entryIds = (data ?? []).map((r) => r.id);
+  }
+
+  return { ok: true, totals, entryIds };
 }

@@ -48,7 +48,7 @@ export async function requestCertificate(): Promise<ActionState> {
 
   const cert = await issueCertificate({
     userId: volunteer.id,
-    fullName: name,
+    subjectName: name,
     hours: eligibility.hours,
     cards: eligibility.cards,
     entryIds: eligibility.entryIds,
@@ -62,6 +62,86 @@ export async function requestCertificate(): Promise<ActionState> {
   return successState(
     `Certificate ${cert.code} is ready. It's below, and you can download it as a PDF.`,
   );
+}
+
+/**
+ * Issues a certificate for a whole club.
+ *
+ * Leaders only, re-checked against the database rather than trusted from the
+ * form — a member could otherwise post a group id and mint a document for a
+ * club they do not run.
+ */
+export async function requestClubCertificate(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { requireVolunteer } = await import("@/lib/volunteer-auth");
+  const { checkClubEligibility, issueCertificate } = await import("@/lib/certificates");
+  const { getServiceClient } = await import("@/lib/supabase/server");
+
+  const volunteer = await requireVolunteer("/account/certificates");
+  const groupId = String(formData.get("groupId") ?? "").trim();
+  if (!groupId) return errorState("We couldn't tell which club that was.");
+
+  const limit = rateLimit(`clubcert:${volunteer.id}`, { limit: 6, windowMs: 60 * 60 * 1000 });
+  if (!limit.ok) {
+    return errorState("That's a few requests in a row — give it an hour and try again.");
+  }
+
+  const admin = getServiceClient();
+  if (!admin) return errorState(UNCONFIGURED);
+
+  const { data: membership } = await admin
+    .from("group_members")
+    .select("role")
+    .eq("group_id", groupId)
+    .eq("user_id", volunteer.id)
+    .maybeSingle();
+
+  if (!membership) return errorState("You're not in that club.");
+  if (membership.role !== "leader") {
+    return errorState(
+      "Only the club's leader can issue its certificate. Your own hours are still yours to certify above.",
+    );
+  }
+
+  const { data: group } = await admin
+    .from("groups")
+    .select("name")
+    .eq("id", groupId)
+    .maybeSingle();
+
+  if (!group) return errorState("We couldn't find that club.");
+
+  const eligibility = await checkClubEligibility(groupId);
+  if (!eligibility.ok) {
+    if (eligibility.reason === "nothing-new") {
+      return errorState(
+        "Your club's latest certificate already covers every hour we've approved for it.",
+      );
+    }
+    return errorState(
+      "No approved hours for this club yet. Once members log hours under the club and we check them, the certificate is one click away.",
+    );
+  }
+
+  const cert = await issueCertificate({
+    userId: volunteer.id,
+    subjectName: group.name,
+    kind: "club",
+    groupId,
+    volunteerCount: eligibility.totals.volunteers,
+    hours: eligibility.totals.hours,
+    cards: eligibility.totals.cards,
+    entryIds: eligibility.entryIds,
+  });
+
+  if (!cert) return errorState(UNCONFIGURED);
+
+  revalidatePath("/account/certificates");
+  revalidatePath("/account/groups");
+
+  return successState(`Certificate ${cert.code} is ready for ${group.name}.`);
 }
 
 /**
