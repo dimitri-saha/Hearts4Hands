@@ -56,6 +56,15 @@ export async function requestCertificate(): Promise<ActionState> {
 
   if (!cert) return errorState(UNCONFIGURED);
 
+  if (volunteer.email) {
+    const { sendBuilt } = await import("@/lib/email");
+    const { certificateIssued } = await import("@/lib/email/templates");
+    await sendBuilt(
+      volunteer.email,
+      certificateIssued(name, cert.code, Number(cert.hours), cert.cards),
+    );
+  }
+
   revalidatePath("/account/certificates");
   revalidatePath("/account");
 

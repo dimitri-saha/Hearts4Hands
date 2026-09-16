@@ -83,6 +83,14 @@ export async function reviewVolunteer(formData: FormData): Promise<void> {
   const supabase = getServiceClient();
   if (!supabase) return;
 
+  // Read the row first: the volunteer needs telling what was decided, and after
+  // the update we would no longer know whose entry it was or how big it was.
+  const { data: entry } = await supabase
+    .from("volunteer_signups")
+    .select("user_id, full_name, email, hours")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("volunteer_signups")
     .update({
@@ -93,6 +101,33 @@ export async function reviewVolunteer(formData: FormData): Promise<void> {
     .eq("id", id);
 
   if (error) console.error("[admin] reviewVolunteer failed:", error.message);
+
+  // Tell the volunteer. Before this, an entry could sit approved or rejected
+  // indefinitely with nobody outside the admin screen any the wiser.
+  if (!error && entry?.email && status !== "pending") {
+    const { sendBuilt } = await import("@/lib/email");
+    const { hoursApproved, hoursRejected } = await import("@/lib/email/templates");
+    const hours = Number(entry.hours) || 0;
+    const name = entry.full_name?.trim() || "there";
+
+    if (status === "approved") {
+      let total = hours;
+      if (entry.user_id) {
+        const { data: all } = await supabase
+          .from("volunteer_signups")
+          .select("hours")
+          .eq("user_id", entry.user_id)
+          .eq("status", "approved");
+        total = Math.round((all ?? []).reduce((n, r) => n + (Number(r.hours) || 0), 0) * 10) / 10;
+      }
+      await sendBuilt(entry.email, hoursApproved(name, hours, total));
+    } else {
+      await sendBuilt(
+        entry.email,
+        hoursRejected(name, hours, note || "No reason was recorded — reply and we'll explain."),
+      );
+    }
+  }
 
   revalidatePath("/admin/volunteers");
   revalidatePath("/admin");

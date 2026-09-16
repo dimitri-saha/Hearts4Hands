@@ -6,7 +6,8 @@ import {
   successState,
   type ActionState,
 } from "@/lib/action-state";
-import { emailTemplates, notifyTeam, sendEmail } from "@/lib/email";
+import { notifyTeam, sendBuilt } from "@/lib/email";
+import { messageReceived, storyReceived } from "@/lib/email/templates";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { contact as contactInfo, site } from "@/lib/site";
 import { getServiceClient } from "@/lib/supabase/server";
@@ -115,18 +116,20 @@ export async function submitBlogPost(
   }
 
   const [confirmation] = await Promise.allSettled([
-    sendEmail({
-      to: data.authorEmail,
-      subject: `We received your story: ${data.title}`,
-      text: emailTemplates.blogConfirmation(data.authorName, data.title),
-      replyTo: contactInfo.editor,
-    }),
+    sendBuilt(
+      data.authorEmail,
+      storyReceived(data.authorName, data.title),
+      contactInfo.editor,
+    ),
     notifyTeam(
       "New story submission",
-      `"${data.title}" (${data.category})\n` +
-        `By ${data.authorName} <${data.authorEmail}>\n` +
-        `${data.body.length.toLocaleString()} characters\n\n` +
-        `Review at ${site.url}/admin/stories`,
+      [
+        ["Title", data.title],
+        ["Category", data.category],
+        ["From", `${data.authorName} <${data.authorEmail}>`],
+        ["Length", `${data.body.length.toLocaleString()} characters`],
+      ],
+      `${site.url}/admin/stories`,
       data.authorEmail,
     ),
   ]);
@@ -206,14 +209,15 @@ export async function submitContact(
   }
 
   await Promise.allSettled([
-    sendEmail({
-      to: data.email,
-      subject: `We got your message — ${site.name}`,
-      text: emailTemplates.contactConfirmation(data.name),
-    }),
+    sendBuilt(data.email, messageReceived(data.name)),
     notifyTeam(
       `New message: ${data.subject || data.topic}`,
-      `From ${data.name} <${data.email}>\nTopic: ${data.topic}\n\n${data.message}`,
+      [
+        ["From", `${data.name} <${data.email}>`],
+        ["Topic", data.topic],
+        ["Message", data.message.slice(0, 400)],
+      ],
+      `${site.url}/admin/messages`,
       data.email,
     ),
   ]);

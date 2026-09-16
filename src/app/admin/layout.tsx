@@ -30,6 +30,7 @@ const navItems: AdminNavItem[] = [
   { href: "/admin/certificates", label: "Certificates" },
   { href: "/admin/messages", label: "Messages" },
   { href: "/admin/stats", label: "Impact numbers" },
+  { href: "/admin/emails", label: "Emails" },
   { href: "/", label: "View site ↗", separated: true },
 ];
 

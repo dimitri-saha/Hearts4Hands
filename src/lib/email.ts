@@ -20,11 +20,13 @@ export const isEmailConfigured = Boolean(API_KEY);
 type SendArgs = {
   to: string | string[];
   subject: string;
+  /** Always send one. Text-only clients and screen readers read this, and a message without it scores worse with spam filters. */
   text: string;
+  html?: string;
   replyTo?: string;
 };
 
-export async function sendEmail({ to, subject, text, replyTo }: SendArgs): Promise<boolean> {
+export async function sendEmail({ to, subject, text, html, replyTo }: SendArgs): Promise<boolean> {
   if (!API_KEY) return false;
 
   try {
@@ -39,6 +41,7 @@ export async function sendEmail({ to, subject, text, replyTo }: SendArgs): Promi
         to: Array.isArray(to) ? to : [to],
         subject,
         text,
+        ...(html ? { html } : {}),
         ...(replyTo ? { reply_to: replyTo } : {}),
       }),
     });
@@ -55,49 +58,28 @@ export async function sendEmail({ to, subject, text, replyTo }: SendArgs): Promi
 }
 
 /** Ping the team inbox that something new needs review. */
-export async function notifyTeam(subject: string, text: string, replyTo?: string) {
-  return sendEmail({ to: NOTIFY, subject: `[${site.name}] ${subject}`, text, replyTo });
+export async function notifyTeam(
+  subject: string,
+  rows: [string, string][],
+  reviewUrl: string,
+  replyTo?: string,
+) {
+  const { teamNotification } = await import("./email/templates");
+  const built = teamNotification(subject, rows, reviewUrl);
+  return sendEmail({
+    to: NOTIFY,
+    subject: `[${site.name}] ${subject}`,
+    text: built.text,
+    html: built.html,
+    replyTo,
+  });
 }
 
-export const emailTemplates = {
-  volunteerConfirmation(name: string, hours: number) {
-    return `Hi ${name},
-
-Thanks for signing up with ${site.name}! We've got your submission${
-      hours > 0 ? ` — including ${hours} hour${hours === 1 ? "" : "s"} logged` : ""
-    }.
-
-A real person reviews every submission, usually within a week. If you uploaded a photo of your cards, that gets checked at the same time and counted toward volunteer award tracking.
-
-In the meantime:
-• Card-making guide: ${site.url}/volunteer
-• Share your story: ${site.url}/blog/submit
-
-Thank you for making something for someone who needs it.
-
-— The ${site.name} team
-${site.url}`;
-  },
-
-  blogConfirmation(name: string, title: string) {
-    return `Hi ${name},
-
-Thank you for sending us "${title}".
-
-An editor reads every submission. If we publish it, we'll email you first with any edits so you can approve them — nothing goes up without your OK. If it isn't the right fit, we'll tell you that too.
-
-Writing about this stuff takes guts. Thank you for trusting us with it.
-
-— The ${site.name} editors
-${contact.editor}`;
-  },
-
-  contactConfirmation(name: string) {
-    return `Hi ${name},
-
-We got your message and someone will get back to you soon — usually within a few days.
-
-— The ${site.name} team
-${site.url}`;
-  },
-};
+/** Sends a prebuilt template from `email/templates`. */
+export async function sendBuilt(
+  to: string,
+  built: { subject: string; html: string; text: string },
+  replyTo?: string,
+) {
+  return sendEmail({ to, subject: built.subject, text: built.text, html: built.html, replyTo });
+}

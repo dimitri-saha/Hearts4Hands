@@ -420,15 +420,30 @@ export async function logHours(_prev: ActionState, formData: FormData): Promise<
     return errorState("Something went wrong saving that. Please try again.", undefined, echoed);
   }
 
-  await notifyTeam(
-    "New hours logged",
-    `${profile?.full_name ?? "A volunteer"} (${volunteer.email})\n` +
-      `Hours: ${data.hours} · Cards: ${data.cardsMade}\n` +
-      `Guardian account: ${isGuardianAccount(volunteer) ? "yes" : "no"}\n` +
-      `Proof: ${proofPath ? "attached" : "none"}\n\n` +
-      `Review at ${site.url}/admin/volunteers`,
-    volunteer.email ?? undefined,
-  );
+  const { hoursLogged } = await import("@/lib/email/templates");
+  const { sendBuilt } = await import("@/lib/email");
+
+  await Promise.allSettled([
+    notifyTeam(
+      "New hours logged",
+      [
+        ["Volunteer", `${profile?.full_name ?? "A volunteer"} (${volunteer.email})`],
+        ["Hours", String(data.hours)],
+        ["Cards", String(data.cardsMade)],
+        ["Guardian account", isGuardianAccount(volunteer) ? "yes" : "no"],
+        ["Proof", proofPath ? "attached" : "none"],
+      ],
+      `${site.url}/admin/volunteers`,
+      volunteer.email ?? undefined,
+    ),
+    // The volunteer hears back too — previously only the team was told.
+    volunteer.email
+      ? sendBuilt(
+          volunteer.email,
+          hoursLogged(profile?.full_name ?? "there", data.hours, data.cardsMade),
+        )
+      : Promise.resolve(false),
+  ]);
 
   revalidatePath("/account");
   return successState(

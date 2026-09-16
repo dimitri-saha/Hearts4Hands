@@ -23,7 +23,12 @@ const csp = [
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  "img-src 'self' data: blob: https://*.supabase.co",
+  // Our own canonical origin is listed alongside 'self' because the email
+  // previews at /admin/emails render real templates, whose image URLs are
+  // absolute (a mail client has no origin to resolve against). On localhost
+  // those are cross-origin, so without this the preview shows a broken logo
+  // for an email that is perfectly fine in an inbox.
+  "img-src 'self' data: blob: https://*.supabase.co https://hearts4hands.org https://www.hearts4hands.org",
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   // 'unsafe-eval' is DEV ONLY. React's development build uses eval() for its
