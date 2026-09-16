@@ -9,6 +9,7 @@ import { signOutVolunteer } from "@/app/actions/account";
 const items = [
   { href: "/account", label: "Overview" },
   { href: "/account/hours", label: "Log hours" },
+  { href: "/account/certificates", label: "Certificates" },
   { href: "/account/groups", label: "My club" },
 ];
 

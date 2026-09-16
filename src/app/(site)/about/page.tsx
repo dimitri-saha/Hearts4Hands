@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { Audience } from "@/components/about/Audience";
-import { Team } from "@/components/about/Team";
+import { TeamPreview } from "@/components/about/TeamPreview";
 import { Timeline } from "@/components/about/Timeline";
 import { Values } from "@/components/about/Values";
 import { HeartRule, ScallopEdge, TornEdge, WaveEdge } from "@/components/illustrations/Dividers";
@@ -84,14 +84,17 @@ export default function AboutPage() {
       </Section>
       <WaveEdge color={sectionHex.paper} className="-mt-px bg-blush" />
 
-      {/* ----------------------------------------------------------------- team */}
-      <Section tone="paper" id="team">
+      {/* ----------------------------------------------------------------- team
+          The roster lives on /leadership, not here. `id="team"` stays because
+          /about#team has been linked from the footer and may be bookmarked —
+          the anchor now lands on the way through rather than a dead page. */}
+      <Section tone="paper" id="team" width="narrow" className="text-center">
         <SectionHeading
           eyebrow="The team"
           title="Who is behind this"
-          subtitle="Some of these seats are still empty. If one of them sounds like you, say so."
+          subtitle="Students in different cities — plus a few roles we are still trying to fill."
         />
-        <Team />
+        <TeamPreview />
       </Section>
       <ScallopEdge color={sectionHex.cream} className="-mt-px bg-paper" />
 

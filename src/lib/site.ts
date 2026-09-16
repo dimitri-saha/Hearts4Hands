@@ -52,6 +52,7 @@ export type NavItem = { href: string; label: string };
 export const mainNav: NavItem[] = [
   { href: "/about", label: "About" },
   { href: "/volunteer", label: "Volunteer" },
+  { href: "/leadership", label: "Leadership" },
   { href: "/blog", label: "Stories" },
   { href: "/contact", label: "Contact" },
 ];
@@ -64,13 +65,14 @@ export const footerNav: { heading: string; items: NavItem[] }[] = [
       { href: "/volunteer#log-hours", label: "Log your hours" },
       { href: "/donate", label: "Donate" },
       { href: "/blog/submit", label: "Share your story" },
+      { href: "/leadership#apply", label: "Apply to lead" },
     ],
   },
   {
     heading: "Learn more",
     items: [
       { href: "/about", label: "Our story" },
-      { href: "/about#team", label: "The team" },
+      { href: "/leadership", label: "The team" },
       { href: "/blog", label: "Stories & education" },
       { href: "/contact", label: "Contact us" },
       { href: "/privacy", label: "Privacy" },
@@ -188,25 +190,123 @@ export const volunteerActivities = [
 
 export type VolunteerActivity = (typeof volunteerActivities)[number]["value"];
 
-/** Editable in-repo content — no CMS needed for the About page. */
-export const team = [
+/**
+ * Open leadership positions.
+ *
+ * Applications run through Google Forms rather than a native form: these are
+ * judgement calls on free-text answers that somebody reads, not structured rows
+ * that belong in Postgres next to volunteer hours. Paste a new form URL here and
+ * the card appears; delete the entry and it's gone.
+ *
+ * NOTE: the blurbs are placeholder copy — rewrite them before this goes live.
+ */
+export const leadershipRoles = [
+  {
+    title: "Chapter President",
+    blurb:
+      "Start Hearts4Hands at your own school and run it. You recruit the volunteers, organise the card-making sessions, and keep your chapter's hours logged.",
+    url: "https://forms.gle/jFEsbhVeYSTzaJGa7",
+  },
+  {
+    title: "Vice President Intern",
+    blurb:
+      "Work next to the leadership team on whatever the month needs — events, outreach, helping new chapters find their feet. The best way in if you are not sure which role fits yet.",
+    url: "https://forms.gle/YxfZuHe7DDH39iMJ7",
+  },
+  {
+    title: "Social Media Rep",
+    blurb:
+      "Run our Instagram. Post the cards volunteers send in, write captions that sound like a person wrote them, and help people find us.",
+    url: "https://forms.gle/hubxVLVU81fxwbog6",
+  },
+  {
+    title: "Fundraising & Marketing Strategist",
+    blurb:
+      "Plan the drives that pay for paper, envelopes, and stamps — and for the research money that everything left over goes to.",
+    url: "https://forms.gle/PF1KuFfvspYwtR8y9",
+  },
+  {
+    title: "Editor",
+    blurb:
+      "Read the stories volunteers send in and decide what goes on the blog. Careful, kind reading matters more than a writing background.",
+    url: "https://forms.gle/K4j7hrWonjXmix7W9",
+  },
+] as const;
+
+/**
+ * The current leadership roster. This is the single copy — /about links here
+ * rather than keeping its own list, because two lists of the same people drift.
+ *
+ * ⚠️ PLACEHOLDER DATA — everyone below except the founder is invented, so the
+ * page can be judged as a layout before the real roster exists. Replace before
+ * publishing.
+ *
+ * `photo` is optional. With no photo, `<Portrait>` draws an illustrated stand-in
+ * seeded from the name, so a roster with only some headshots still looks
+ * deliberate instead of half-finished. To use a real one, drop the file in
+ * `public/team/` and set `photo: "/team/name.jpg"`.
+ */
+export type LeaderProfile = {
+  name: string;
+  role: string;
+  location?: string;
+  bio: string;
+  photo?: string;
+};
+
+export const leadershipTeam: LeaderProfile[] = [
   {
     name: "Ira",
     role: "Founder",
     bio: "Started Hearts4Hands with a stack of construction paper and a very long list of ideas.",
   },
   {
-    name: "Open seat",
-    role: "Story editor",
-    bio: "We are recruiting volunteer editors to review blog submissions. This could be you.",
+    name: "Maya Ellison",
+    role: "Vice President",
+    location: "Portland, OR",
+    bio: "Keeps the chapters talking to each other and remembers whose turn it is to buy envelopes.",
   },
   {
-    name: "Open seat",
-    role: "Chapter lead",
-    bio: "Help us start Hearts4Hands at your school or in your city.",
+    name: "Devin Okafor",
+    role: "Chapter President — Lincoln High",
+    location: "Seattle, WA",
+    bio: "Runs a Thursday card-making session that has outgrown two classrooms so far.",
   },
+  {
+    name: "Priya Raman",
+    role: "Story Editor",
+    location: "Austin, TX",
+    bio: "Reads every submission twice and has a gift for the note that makes a draft click.",
+  },
+  {
+    name: "Luca Moretti",
+    role: "Fundraising Strategist",
+    location: "Chicago, IL",
+    bio: "Turned a bake sale into the run of stamps that carried us through the spring.",
+  },
+  {
+    name: "Nadia Haddad",
+    role: "Social Media Rep",
+    location: "Toronto, ON",
+    bio: "Posts the cards, writes the captions, and answers the messages that arrive at midnight.",
+  },
+];
+
+/**
+ * Who signs the certificates.
+ *
+ * Printed under the signature lines on every generated PDF. Two slots is the
+ * intended shape; the layout divides the width by however many are listed, so
+ * one or three also work.
+ *
+ * TODO: these are placeholders until the club presidents' details are in.
+ */
+export const certificateSignatories = [
+  { name: "Signature pending", role: "Co-President, Hearts4Hands" },
+  { name: "Signature pending", role: "Co-President, Hearts4Hands" },
 ] as const;
 
+/** Editable in-repo content — no CMS needed for the About page. */
 export const milestones = [
   {
     year: "The spark",

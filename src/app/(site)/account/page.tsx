@@ -84,6 +84,21 @@ export default async function AccountPage() {
           />
         </div>
 
+        {/* The certificate is the reason hours get logged at all, so the
+            dashboard says so as soon as there is something to certify. */}
+        {totals.approvedHours > 0 ? (
+          <Alert tone="info">
+            <p>
+              Those approved hours can go on a certificate in your name, with a code anyone can
+              check.{" "}
+              <Link className={linkClass} href="/account/certificates">
+                Get your certificate
+              </Link>
+              .
+            </p>
+          </Alert>
+        ) : null}
+
         {totals.pendingCount > 0 ? (
           <Alert tone="note">
             <p>

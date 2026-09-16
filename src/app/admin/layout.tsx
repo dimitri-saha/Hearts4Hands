@@ -27,6 +27,7 @@ const navItems: AdminNavItem[] = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/volunteers", label: "Volunteer hours" },
   { href: "/admin/stories", label: "Stories" },
+  { href: "/admin/certificates", label: "Certificates" },
   { href: "/admin/messages", label: "Messages" },
   { href: "/admin/stats", label: "Impact numbers" },
   { href: "/", label: "View site ↗", separated: true },
