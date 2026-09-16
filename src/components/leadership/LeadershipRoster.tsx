@@ -1,8 +1,8 @@
 import Image from "next/image";
 
 import { PawHeart } from "@/components/illustrations/Hearts";
-import { Portrait } from "@/components/illustrations/Portrait";
 import { Card } from "@/components/ui/Card";
+import { Monogram } from "@/components/ui/Monogram";
 import { leadershipTeam } from "@/lib/site";
 
 /**
@@ -33,10 +33,7 @@ export function LeadershipRoster() {
                     className="object-cover"
                   />
                 ) : (
-                  <Portrait
-                    seed={person.name}
-                    className="absolute inset-x-0 bottom-0 mx-auto h-[92%] w-auto"
-                  />
+                  <Monogram name={person.name} />
                 )}
               </div>
               <PawHeart className="absolute -right-2 -bottom-3 h-8 w-8" />
@@ -47,7 +44,7 @@ export function LeadershipRoster() {
             {person.location ? (
               <p className="mt-0.5 text-sm text-brown-soft">{person.location}</p>
             ) : null}
-            <p className="mt-2 text-brown-mid">{person.bio}</p>
+            {person.bio ? <p className="mt-2 text-brown-mid">{person.bio}</p> : null}
           </Card>
         </li>
       ))}

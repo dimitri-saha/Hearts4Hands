@@ -1,4 +1,6 @@
-import { Portrait } from "@/components/illustrations/Portrait";
+import Image from "next/image";
+
+import { Monogram } from "@/components/ui/Monogram";
 import { Button } from "@/components/ui/Button";
 import { leadershipTeam } from "@/lib/site";
 
@@ -9,9 +11,9 @@ import { leadershipTeam } from "@/lib/site";
  * current — this page used to carry its own copy in a `team` constant, and two
  * lists of the same people only ever drift apart.
  *
- * The faces are decorative on purpose. They are illustrated stand-ins, so
- * naming them here would have a screen reader announce people who, as far as
- * this page is concerned, are just a picture. The button carries the meaning.
+ * The faces are decorative on purpose — the roster page names everyone, and
+ * repeating the names here would only make a screen reader read them twice.
+ * The button carries the meaning.
  */
 export function TeamPreview() {
   const faces = leadershipTeam.slice(0, 5);
@@ -21,8 +23,12 @@ export function TeamPreview() {
       <ul className="flex list-none justify-center -space-x-5">
         {faces.map((person) => (
           <li key={person.name}>
-            <span className="block h-18 w-18 overflow-hidden rough-blob border-[2.5px] border-brown bg-cream sm:h-22 sm:w-22">
-              <Portrait seed={person.name} className="h-full w-full" />
+            <span className="relative block h-18 w-18 overflow-hidden rough-blob border-[2.5px] border-brown bg-cream sm:h-22 sm:w-22">
+              {person.photo ? (
+                <Image src={person.photo} alt="" fill sizes="88px" className="object-cover" />
+              ) : (
+                <Monogram name={person.name} size="sm" />
+              )}
             </span>
           </li>
         ))}

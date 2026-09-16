@@ -53,7 +53,7 @@ export default function LeadershipPage() {
         <SectionHeading
           eyebrow="Current leadership"
           title="The people already doing it"
-          subtitle="Students in different cities, all of whom started by making one card."
+          subtitle="The students who keep this running, and who all started by making one card."
         />
         <LeadershipRoster />
       </Section>

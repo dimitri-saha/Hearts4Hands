@@ -237,10 +237,6 @@ export const leadershipRoles = [
  * The current leadership roster. This is the single copy — /about links here
  * rather than keeping its own list, because two lists of the same people drift.
  *
- * ⚠️ PLACEHOLDER DATA — everyone below except the founder is invented, so the
- * page can be judged as a layout before the real roster exists. Replace before
- * publishing.
- *
  * `photo` is optional. With no photo, `<Portrait>` draws an illustrated stand-in
  * seeded from the name, so a roster with only some headshots still looks
  * deliberate instead of half-finished. To use a real one, drop the file in
@@ -250,45 +246,39 @@ export type LeaderProfile = {
   name: string;
   role: string;
   location?: string;
-  bio: string;
+  /** Optional. A card without one just shows name, role and place. */
+  bio?: string;
   photo?: string;
 };
 
 export const leadershipTeam: LeaderProfile[] = [
   {
-    name: "Ira",
-    role: "Founder",
-    bio: "Started Hearts4Hands with a stack of construction paper and a very long list of ideas.",
+    name: "Ira Verma",
+    role: "President",
+    location: "San Ramon, CA",
+    photo: "/team/Ira_Verma.jpg",
   },
   {
-    name: "Maya Ellison",
-    role: "Vice President",
-    location: "Portland, OR",
-    bio: "Keeps the chapters talking to each other and remembers whose turn it is to buy envelopes.",
+    name: "Preethika Prabhakaran",
+    role: "President",
+    location: "San Ramon, CA",
   },
   {
-    name: "Devin Okafor",
-    role: "Chapter President — Lincoln High",
-    location: "Seattle, WA",
-    bio: "Runs a Thursday card-making session that has outgrown two classrooms so far.",
+    name: "Dimitri Saha",
+    role: "Treasurer and Tech Lead",
+    location: "San Ramon, CA",
   },
   {
-    name: "Priya Raman",
-    role: "Story Editor",
-    location: "Austin, TX",
-    bio: "Reads every submission twice and has a gift for the note that makes a draft click.",
+    name: "Nishna Nadipally",
+    role: "Team member",
+    location: "San Ramon, CA",
+    photo: "/team/Nishna_Nadipally.jpg",
   },
   {
-    name: "Luca Moretti",
-    role: "Fundraising Strategist",
-    location: "Chicago, IL",
-    bio: "Turned a bake sale into the run of stamps that carried us through the spring.",
-  },
-  {
-    name: "Nadia Haddad",
-    role: "Social Media Rep",
-    location: "Toronto, ON",
-    bio: "Posts the cards, writes the captions, and answers the messages that arrive at midnight.",
+    name: "Varshini Anupalli",
+    role: "Team member",
+    location: "San Ramon, CA",
+    photo: "/team/Varshini_Anupalli.jpg",
   },
 ];
 

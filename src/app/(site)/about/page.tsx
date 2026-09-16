@@ -92,7 +92,7 @@ export default function AboutPage() {
         <SectionHeading
           eyebrow="The team"
           title="Who is behind this"
-          subtitle="Students in different cities — plus a few roles we are still trying to fill."
+          subtitle="The students who run Hearts4Hands — plus a few roles we are still trying to fill."
         />
         <TeamPreview />
       </Section>
