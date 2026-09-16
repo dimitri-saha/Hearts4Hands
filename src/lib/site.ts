@@ -204,7 +204,7 @@ export const leadershipRoles = [
   {
     title: "Chapter President",
     blurb:
-      "Start Hearts4Hands at your own school and run it. You recruit the volunteers, organise the card-making sessions, and keep your chapter's hours logged.",
+      "Start Hearts4Hands at your own school and run it. You recruit the volunteers, run the card-making sessions, organize fundraisers, and keep your chapter's hours logged.",
     url: "https://forms.gle/jFEsbhVeYSTzaJGa7",
   },
   {
@@ -222,7 +222,7 @@ export const leadershipRoles = [
   {
     title: "Fundraising & Marketing Strategist",
     blurb:
-      "Plan the drives that pay for paper, envelopes, and stamps — and for the research money that everything left over goes to.",
+      "Plan the drives that pay for paper, envelopes, and stamps — and for the research money everything left over goes to. Expect to bring flyer ideas, post ideas, and other ways to help us grow.",
     url: "https://forms.gle/PF1KuFfvspYwtR8y9",
   },
   {
@@ -254,14 +254,20 @@ export type LeaderProfile = {
 export const leadershipTeam: LeaderProfile[] = [
   {
     name: "Ira Verma",
-    role: "President",
+    role: "Co-President",
     location: "San Ramon, CA",
     photo: "/team/Ira_Verma.jpg",
   },
   {
     name: "Preethika Prabhakaran",
-    role: "President",
+    role: "Co-President",
     location: "San Ramon, CA",
+  },
+  {
+    name: "Nishna Nadipally",
+    role: "Vice President",
+    location: "San Ramon, CA",
+    photo: "/team/Nishna_Nadipally.jpg",
   },
   {
     name: "Dimitri Saha",
@@ -269,14 +275,8 @@ export const leadershipTeam: LeaderProfile[] = [
     location: "San Ramon, CA",
   },
   {
-    name: "Nishna Nadipally",
-    role: "Team member",
-    location: "San Ramon, CA",
-    photo: "/team/Nishna_Nadipally.jpg",
-  },
-  {
     name: "Varshini Anupalli",
-    role: "Team member",
+    role: "Social Media Head",
     location: "San Ramon, CA",
     photo: "/team/Varshini_Anupalli.jpg",
   },

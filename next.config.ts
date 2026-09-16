@@ -84,6 +84,18 @@ const nextConfig: NextConfig = {
     "/account/certificates/[code]": ["./src/fonts/**/*", "./public/signatures/**/*"],
   },
 
+  images: {
+    /**
+     * Next 16 only permits quality values listed here — the default allowlist is
+     * `[75]` alone, and a `quality` prop outside it is rejected rather than
+     * honoured, so raising it on a component does nothing without this line.
+     *
+     * 75 is fine for artwork but visibly soft on photographs of faces, which
+     * are then compressed a second time on top of the JPEG they arrived as.
+     */
+    qualities: [75, 90],
+  },
+
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

@@ -25,7 +25,7 @@ export function TeamPreview() {
           <li key={person.name}>
             <span className="relative block h-18 w-18 overflow-hidden rough-blob border-[2.5px] border-brown bg-cream sm:h-22 sm:w-22">
               {person.photo ? (
-                <Image src={person.photo} alt="" fill sizes="88px" className="object-cover" />
+                <Image src={person.photo} alt="" fill sizes="88px" quality={90} className="object-cover" />
               ) : (
                 <Monogram name={person.name} size="sm" />
               )}
