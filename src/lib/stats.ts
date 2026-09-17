@@ -19,6 +19,18 @@ export type ImpactStats = {
   updatedAt: string | null;
   /** False when the numbers came from `fallbackStats` rather than the database. */
   isLive: boolean;
+  /**
+   * The split behind the headline figures.
+   *
+   * `baseline` is the work done before this website existed — entered by hand
+   * at /admin/stats, because there are no rows for it and inventing 57
+   * `volunteer_signups` to make the arithmetic work would put fabricated
+   * records behind real certificates.
+   *
+   * `live` is counted from approved entries. The public numbers are the sum.
+   */
+  baseline: { volunteers: number; hoursLogged: number; cardsMade: number };
+  live: { volunteers: number; hoursLogged: number; cardsMade: number };
 };
 
 function fromRow(row: SiteStats): ImpactStats {
@@ -34,10 +46,26 @@ function fromRow(row: SiteStats): ImpactStats {
     note: row.note,
     updatedAt: row.updated_at,
     isLive: true,
+    baseline: {
+      volunteers: row.volunteers,
+      hoursLogged: row.hours_logged,
+      cardsMade: row.cards_made,
+    },
+    live: { volunteers: 0, hoursLogged: 0, cardsMade: 0 },
   };
 }
 
-const fallback: ImpactStats = { ...fallbackStats, note: null, isLive: false };
+const fallback: ImpactStats = {
+  ...fallbackStats,
+  note: null,
+  isLive: false,
+  baseline: {
+    volunteers: fallbackStats.volunteers,
+    hoursLogged: fallbackStats.hoursLogged,
+    cardsMade: fallbackStats.cardsMade,
+  },
+  live: { volunteers: 0, hoursLogged: 0, cardsMade: 0 },
+};
 
 /**
  * Volunteers, hours and cards, counted from approved entries.
@@ -125,14 +153,30 @@ export const getStats = cache(async (): Promise<ImpactStats> => {
       ? counted.lastApprovedAt
       : base.updatedAt;
 
+  // Baseline + live, not one or the other.
+  //
+  // Hearts4Hands ran for a school year before this site existed: 57 volunteers,
+  // 171 hours, hundreds of cards, none of which has a row in the database. The
+  // headline figures have to include that history or the site understates what
+  // the group has actually done — but the history can't be faked into
+  // `volunteer_signups`, because those rows are what certificates certify and
+  // what /verify stands behind.
+  //
+  // So the pre-website totals stay in `site_stats` as a hand-entered baseline,
+  // new work is counted from approved entries, and the public number is the
+  // sum. Nothing needs re-typing as volunteers log hours.
   return {
     ...base,
     updatedAt,
-    volunteers: counted.volunteers,
-    hoursLogged: counted.hours,
-    cardsMade: counted.cards,
-    // Live once there is any approved work, even if nobody has saved money
-    // figures yet.
+    volunteers: base.baseline.volunteers + counted.volunteers,
+    hoursLogged: base.baseline.hoursLogged + counted.hours,
+    cardsMade: base.baseline.cardsMade + counted.cards,
+    live: {
+      volunteers: counted.volunteers,
+      hoursLogged: counted.hours,
+      cardsMade: counted.cards,
+    },
+    // Live once there is a database row at all, or any approved work.
     isLive: base.isLive || counted.volunteers > 0,
   };
 });

@@ -138,6 +138,54 @@ export default async function AdminStatsPage() {
         </ul>
       </AdminCard>
 
+      <AdminCard title="Where the headline numbers come from">
+        <p className="mb-4 text-brown-mid">
+          Volunteers, hours and cards are <strong>the pre-website totals below plus everything
+          approved since</strong>. The right-hand column moves on its own as you approve entries —
+          you never need to retype it.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[30rem] border-collapse text-left">
+            <thead>
+              <tr className="border-b-2 border-brown-faint">
+                <th className="py-2 pr-4 font-display text-sm text-brown-soft">&nbsp;</th>
+                <th className="py-2 pr-4 font-display text-sm text-brown-soft">Before the website</th>
+                <th className="py-2 pr-4 font-display text-sm text-brown-soft">Approved since</th>
+                <th className="py-2 font-display text-sm text-brown-soft">Shown publicly</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(
+                [
+                  ["Volunteers", stats.baseline.volunteers, stats.live.volunteers, stats.volunteers],
+                  ["Hours", stats.baseline.hoursLogged, stats.live.hoursLogged, stats.hoursLogged],
+                  ["Cards", stats.baseline.cardsMade, stats.live.cardsMade, stats.cardsMade],
+                ] as const
+              ).map(([label, was, now, total]) => (
+                <tr key={label} className="border-b border-brown-faint/60">
+                  <td className="py-2 pr-4 font-display font-bold text-brown">{label}</td>
+                  <td className="py-2 pr-4 tabular-nums text-brown-mid">{formatNumber(was)}</td>
+                  <td className="py-2 pr-4 tabular-nums text-brown-mid">+ {formatNumber(now)}</td>
+                  <td className="py-2 font-display font-bold tabular-nums text-berry">
+                    {formatNumber(total)}
+                  </td>
+                </tr>
+              ))}
+              <tr>
+                <td className="py-2 pr-4 font-display font-bold text-brown">Hospitals</td>
+                <td className="py-2 pr-4 tabular-nums text-brown-mid">
+                  {formatNumber(stats.hospitalsServed)}
+                </td>
+                <td className="py-2 pr-4 text-brown-soft">entered by hand</td>
+                <td className="py-2 font-display font-bold tabular-nums text-berry">
+                  {formatNumber(stats.hospitalsServed)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </AdminCard>
+
       <AdminCard title="Update the numbers">
         <StatsForm
           initial={{
@@ -145,9 +193,12 @@ export default async function AdminStatsPage() {
             materials: dollars(stats.materialsCents),
             research: dollars(stats.researchCents),
             goal: dollars(stats.goalCents),
-            cardsMade: String(stats.cardsMade),
-            volunteers: String(stats.volunteers),
-            hoursLogged: String(stats.hoursLogged),
+            // Baseline, not the headline figure. The public numbers are
+            // baseline + approved entries; pre-filling this with the sum would
+            // write the total back into the baseline and double it every save.
+            cardsMade: String(stats.baseline.cardsMade),
+            volunteers: String(stats.baseline.volunteers),
+            hoursLogged: String(stats.baseline.hoursLogged),
             hospitalsServed: String(stats.hospitalsServed),
             note: stats.note ?? "",
           }}

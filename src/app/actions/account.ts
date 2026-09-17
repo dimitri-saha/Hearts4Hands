@@ -8,6 +8,7 @@ import { notifyTeam } from "@/lib/email";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
 import { contact as contactInfo, UNDER_13, site } from "@/lib/site";
 import { getServiceClient, getSessionClient } from "@/lib/supabase/server";
+import { safeNextPath } from "@/lib/utils";
 import {
   fieldErrors,
   loginSchema,
@@ -37,10 +38,8 @@ const UNCONFIGURED =
 const CHECK_INBOX =
   "Check your email. If that address has an account with us, a link is on its way — it expires in an hour.";
 
-function redirectTarget(next: string | null | undefined) {
-  // Only same-origin relative paths, so `?next=` can't become an open redirect.
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/account";
-}
+/** Kept as a thin alias so call sites read well; the rule lives in lib/utils. */
+const redirectTarget = (next: string | null | undefined) => safeNextPath(next);
 
 // ---------------------------------------------------------------------------
 // Sign up

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { safeNextPath } from "@/lib/utils";
+
 import { getVolunteer } from "@/lib/volunteer-auth";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { AuthShell } from "@/components/account/AuthShell";
@@ -22,7 +24,7 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   const params = await searchParams;
-  if (await getVolunteer()) redirect(params.next ?? "/account");
+  if (await getVolunteer()) redirect(safeNextPath(params.next));
 
   return (
     <AuthShell

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { errorState, successState, type ActionState } from "@/lib/action-state";
 import { requireAdmin, requireOwner } from "@/lib/auth";
-import { excerptFrom, slugify } from "@/lib/utils";
+import { excerptFrom, slugify, safeNextPath } from "@/lib/utils";
 import { getServiceClient, getSessionClient } from "@/lib/supabase/server";
 import { PROOF_BUCKET } from "@/lib/supabase/types";
 import { fieldErrors, publishSchema, statsSchema } from "@/lib/validation";
@@ -59,9 +59,7 @@ export async function signIn(_prev: ActionState, formData: FormData): Promise<Ac
     );
   }
 
-  // Only allow same-origin relative paths as a redirect target.
-  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/admin";
-  redirect(safeNext);
+  redirect(safeNextPath(next, "/admin"));
 }
 
 export async function signOut() {

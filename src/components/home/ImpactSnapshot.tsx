@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AwardRibbon, CoinJar, GreetingCard, Globe } from "@/components/illustrations/Objects";
+import { HandsHeart } from "@/components/illustrations/Hearts";
 import { Alert } from "@/components/ui/Feedback";
 import { Section, SectionHeading } from "@/components/ui/Section";
 import { StatTile } from "@/components/ui/Stats";
@@ -22,7 +23,8 @@ export function ImpactSnapshot({ stats }: { stats: ImpactStats }) {
     stats.totalRaisedCents === 0 &&
     stats.cardsMade === 0 &&
     stats.volunteers === 0 &&
-    stats.hoursLogged === 0;
+    stats.hoursLogged === 0 &&
+    stats.hospitalsServed === 0;
   const gettingStarted = !stats.isLive || empty;
 
   return (
@@ -30,10 +32,10 @@ export function ImpactSnapshot({ stats }: { stats: ImpactStats }) {
       <SectionHeading
         eyebrow="Where we are right now"
         title="The count so far"
-        subtitle="Updated by hand, so the numbers here are the ones we can actually stand behind."
+        subtitle="Hours and cards are counted from work a real person has checked and approved, plus what the group did before this site existed. Money and hospitals we update by hand."
       />
 
-      <ul className="mt-10 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+      <ul className="mt-10 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-5">
         <li>
           <StatTile
             value={formatCurrency(stats.totalRaisedCents)}
@@ -65,6 +67,17 @@ export function ImpactSnapshot({ stats }: { stats: ImpactStats }) {
             value={formatNumber(stats.hoursLogged)}
             label="Hours logged"
             icon={<AwardRibbon className="h-12 w-10" />}
+            className="h-full px-3 sm:px-5"
+          />
+        </li>
+        {/* Spans both columns on a phone so a fifth tile doesn't sit orphaned
+            in a two-column grid. */}
+        <li className="col-span-2 lg:col-span-1">
+          <StatTile
+            value={formatNumber(stats.hospitalsServed)}
+            label={stats.hospitalsServed === 1 ? "Hospital reached" : "Hospitals reached"}
+            tone="pink"
+            icon={<HandsHeart className="h-12 w-14" />}
             className="h-full px-3 sm:px-5"
           />
         </li>

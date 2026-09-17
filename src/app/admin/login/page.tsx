@@ -2,6 +2,8 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+
+import { safeNextPath } from "@/lib/utils";
 import type { ReactNode } from "react";
 
 import { getAdminUser } from "@/lib/auth";
@@ -24,10 +26,7 @@ export default async function AdminLoginPage({
   searchParams: Promise<{ next?: string | string[] }>;
 }) {
   const params = await searchParams;
-  const raw = Array.isArray(params.next) ? params.next[0] : params.next;
-  // Only same-origin relative paths — mirrors the check inside `signIn`.
-  const next =
-    raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/admin";
+  const next = safeNextPath(params.next, "/admin");
 
   // Already signed in? Skip the form.
   if (isSupabaseConfigured) {

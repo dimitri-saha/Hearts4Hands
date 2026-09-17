@@ -83,3 +83,29 @@ export function hashFraction(seed: string) {
 export function pickBySeed<T>(items: readonly T[], seed: string): T {
   return items[Math.floor(hashFraction(seed) * items.length) % items.length];
 }
+
+/**
+ * Sanitises a `?next=` redirect target.
+ *
+ * Only same-origin *relative* paths are allowed. Without this,
+ * `/login?next=https://evil.example` sends a signed-in visitor straight off the
+ * site from a link that looks entirely legitimate — a phishing amplifier that
+ * borrows our domain's credibility.
+ *
+ * Two shapes have to be rejected, not one:
+ *   - absolute URLs (`https://evil.example`)
+ *   - protocol-relative URLs (`//evil.example`), which browsers treat as
+ *     absolute and which a naive `startsWith("/")` check waves through.
+ *
+ * This lives here, in one place, because it was previously written inline in
+ * four and one of the four was missing.
+ */
+export function safeNextPath(next: string | string[] | null | undefined, fallback = "/account") {
+  const raw = Array.isArray(next) ? next[0] : next;
+  if (!raw) return fallback;
+  if (!raw.startsWith("/")) return fallback;
+  if (raw.startsWith("//")) return fallback;
+  // `/\evil.example` is also treated as protocol-relative by some browsers.
+  if (raw.startsWith("/\\")) return fallback;
+  return raw;
+}

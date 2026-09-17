@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { safeNextPath } from "@/lib/utils";
+
 import { getSessionClient } from "@/lib/supabase/server";
 
 /**
@@ -15,8 +17,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const rawNext = searchParams.get("next");
 
-  // Same-origin relative paths only — this value comes from a URL.
-  const next = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/account";
+  const next = safeNextPath(rawNext);
 
   // Supabase reports link problems here (expired, already used).
   const authError = searchParams.get("error_description") ?? searchParams.get("error");

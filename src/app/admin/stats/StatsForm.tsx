@@ -204,11 +204,11 @@ export function StatsForm({ initial }: { initial: StatsFormValues }) {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field
-            label="Cards made"
+            label="Cards made before the website"
             htmlFor="cardsMade"
             required
             error={errors.cardsMade}
-            hint="Delivered, not planned."
+            hint="Only the ones with no entry in the system — everything logged and approved since is added automatically."
           >
             <Input
               id="cardsMade"
@@ -224,11 +224,11 @@ export function StatsForm({ initial }: { initial: StatsFormValues }) {
           </Field>
 
           <Field
-            label="Volunteers"
+            label="Volunteers before the website"
             htmlFor="volunteers"
             required
             error={errors.volunteers}
-            hint="Distinct people who've signed up."
+            hint="People who volunteered before accounts existed. Anyone with an account is counted on top of this."
           >
             <Input
               id="volunteers"
@@ -244,11 +244,11 @@ export function StatsForm({ initial }: { initial: StatsFormValues }) {
           </Field>
 
           <Field
-            label="Hours logged"
+            label="Hours before the website"
             htmlFor="hoursLogged"
             required
             error={errors.hoursLogged}
-            hint="Approved hours only."
+            hint="Hours from before this site existed. Approved hours logged since are added automatically."
           >
             <Input
               id="hoursLogged"
@@ -268,7 +268,7 @@ export function StatsForm({ initial }: { initial: StatsFormValues }) {
             htmlFor="hospitalsServed"
             required
             error={errors.hospitalsServed}
-            hint="Where cards have actually landed."
+            hint="Where cards have actually landed. Entirely by hand — nothing counts this for you."
           >
             <Input
               id="hospitalsServed"
