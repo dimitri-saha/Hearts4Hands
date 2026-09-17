@@ -262,6 +262,7 @@ export const leadershipTeam: LeaderProfile[] = [
     name: "Preethika Prabhakaran",
     role: "Co-President",
     location: "San Ramon, CA",
+    photo: "/team/Preethika_Prabhakaran.jpg",
   },
   {
     name: "Nishna Nadipally",
