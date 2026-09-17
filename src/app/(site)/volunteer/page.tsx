@@ -3,7 +3,7 @@ import type { ComponentType } from "react";
 
 import { contact, volunteerActivities } from "@/lib/site";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { Card, LinkCard } from "@/components/ui/Card";
 import { Section, SectionHeading, sectionHex } from "@/components/ui/Section";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ScallopEdge, TornEdge, WaveEdge } from "@/components/illustrations/Dividers";
@@ -167,21 +167,35 @@ export default async function VolunteerPage() {
           subtitle="Pick one, pick all of them, or start with whichever is closest to your kitchen table."
         />
 
+        {/* Each one drops you at the log-hours form further down the page —
+            whichever way you helped, the next step is telling us about it.
+            `LinkCard` can't be an <li> itself, so it sits inside one. */}
         <ul className="mt-12 grid list-none gap-6 sm:grid-cols-2">
           {volunteerActivities.map((activity) => {
             const Art = activityArt[activity.value] ?? Heart;
             return (
-              <Card
-                as="li"
-                key={activity.value}
-                seed={activity.value}
-                tone="cream"
-                className="flex flex-col items-start gap-3 px-6 py-7"
-              >
-                <Art className="h-20 w-24" />
-                <h3 className="text-2xl">{activity.label}</h3>
-                <p className="text-brown-mid">{activity.blurb}</p>
-              </Card>
+              <li key={activity.value} className="h-full">
+                <LinkCard
+                  href="#log-hours"
+                  label={`${activity.label} — log your hours`}
+                  seed={activity.value}
+                  tone="cream"
+                  className="group flex h-full flex-col items-start gap-3 px-6 py-7"
+                >
+                  <Art className="h-20 w-24" />
+                  <h3 className="text-2xl">{activity.label}</h3>
+                  <p className="text-brown-mid">{activity.blurb}</p>
+
+                  {/* A span, not a second link: a nested <Link> to the same href
+                      would give the card two tab stops for one destination. */}
+                  <span
+                    aria-hidden="true"
+                    className="mt-auto pt-2 font-display font-bold text-red-deep underline decoration-pink-deep decoration-2 underline-offset-4 group-hover:decoration-red"
+                  >
+                    Log your hours →
+                  </span>
+                </LinkCard>
+              </li>
             );
           })}
         </ul>
