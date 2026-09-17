@@ -1,0 +1,11 @@
+import { admin, cleanup, TAG } from "./qa-lib.mjs";
+const removed = await cleanup();
+console.log("  removed:", JSON.stringify(removed));
+const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+console.log("  leftover qa accounts:", data.users.filter((u) => (u.email ?? "").startsWith(TAG)).length);
+const { data: adm } = await admin.from("admins").select("email,role");
+console.log("  admins now:", adm.map((a) => `${a.email}:${a.role}`).join(", "));
+const { data: sig } = await admin.from("volunteer_signups").select("full_name,hours,status");
+console.log("  volunteer_signups now:", sig.length, JSON.stringify(sig));
+const { data: cert } = await admin.from("certificates").select("code,subject_name");
+console.log("  certificates now:", cert.length, JSON.stringify(cert));

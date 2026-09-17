@@ -76,13 +76,6 @@ export default async function AdminStoriesPage({
           title="Stories"
           description="Read what volunteers have sent in, edit it, and publish it to the blog."
         />
-        {denied ? (
-        <AdminAlert tone="note" title="That part of the admin isn't yours">
-          Your account is an <strong>editor</strong> account: story submissions and posts. Volunteer
-          hours, contact messages, certificates and the impact numbers belong to an owner account.
-          If you need one of those, ask an owner.
-        </AdminAlert>
-      ) : null}
         <AdminAlert tone="note" title="No database connected yet">
           <p>
             Submissions and posts live in Supabase. This page needs{" "}
@@ -297,6 +290,15 @@ export default async function AdminStoriesPage({
               { value: "all", label: "All", count: totalSubmissions },
             ]}
           />
+
+      {/* requireOwner() sends editors here rather than to a login screen. */}
+      {denied ? (
+        <AdminAlert tone="note" title="That part of the admin isn't yours">
+          Your account is an <strong>editor</strong> account: story submissions and posts. Volunteer
+          hours, contact messages, certificates and the impact numbers belong to an owner account.
+          If you need one of those, ask an owner.
+        </AdminAlert>
+      ) : null}
 
           {/* Two-step confirmation, done with <details> so it still works
               without JavaScript — this deletes rows and cannot be undone. */}
