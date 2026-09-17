@@ -7,7 +7,7 @@ import {
   AdminPageHeader,
   AdminStat,
 } from "@/components/admin";
-import { requireAdmin } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getStats } from "@/lib/stats";
 import { getServiceClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils";
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 const dollars = (cents: number) => String(Math.round(cents) / 100);
 
 export default async function AdminStatsPage() {
-  await requireAdmin("/admin/stats");
+  await requireOwner("/admin/stats");
 
   const stats = await getStats();
   const supabase = getServiceClient();

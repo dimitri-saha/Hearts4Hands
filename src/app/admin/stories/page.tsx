@@ -57,11 +57,16 @@ function wordCount(text: string) {
 export default async function AdminStoriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; denied?: string }>;
 }) {
   await requireAdmin("/admin/stories");
 
-  const filter = parseFilter((await searchParams).status);
+  const params = await searchParams;
+  const filter = parseFilter(params.status);
+  // requireOwner() sends editors here rather than to a login screen — they are
+  // signed in correctly, just somewhere they can't go. Without this the
+  // redirect would look like the link was broken.
+  const denied = params.denied === "1";
   const supabase = getServiceClient();
 
   if (!supabase) {
@@ -71,6 +76,13 @@ export default async function AdminStoriesPage({
           title="Stories"
           description="Read what volunteers have sent in, edit it, and publish it to the blog."
         />
+        {denied ? (
+        <AdminAlert tone="note" title="That part of the admin isn't yours">
+          Your account is an <strong>editor</strong> account: story submissions and posts. Volunteer
+          hours, contact messages, certificates and the impact numbers belong to an owner account.
+          If you need one of those, ask an owner.
+        </AdminAlert>
+      ) : null}
         <AdminAlert tone="note" title="No database connected yet">
           <p>
             Submissions and posts live in Supabase. This page needs{" "}

@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import { logHours } from "@/app/actions/account";
 import { idleState, valueOf, valuesOf } from "@/lib/action-state";
-import { ACCEPTED_IMAGE_TYPES, MAX_UPLOAD_BYTES, volunteerActivities } from "@/lib/site";
+import {
+  ACCEPTED_IMAGE_TYPES,
+  MAX_UPLOAD_BYTES,
+  deliveryMethods,
+  volunteerActivities,
+} from "@/lib/site";
+import { Button } from "@/components/ui/Button";
 import { Alert, SuccessPanel } from "@/components/ui/Feedback";
 import { CheckboxRow, Field, Fieldset, Input, Select, Textarea } from "@/components/ui/Field";
 import {
@@ -34,6 +40,16 @@ export function LogHoursForm({ groups }: { groups: GroupOption[] }) {
   const alertRef = useRef<HTMLDivElement>(null);
   const attempt = useFormAttempt(state);
 
+  // Which activities are ticked, tracked in React rather than read off the DOM:
+  // three later fields appear, disappear or change wording based on this, and
+  // "cards made" makes no sense to ask somebody who only ran a bake sale.
+  const [picked, setPicked] = useState<string[]>(() => valuesOf(state, "activities"));
+  const madeCards = picked.includes("cards");
+  const isWriting = picked.includes("writing");
+
+  const toggle = (value: string, on: boolean) =>
+    setPicked((prev) => (on ? [...new Set([...prev, value])] : prev.filter((v) => v !== value)));
+
   useEffect(() => {
     if (state.status === "error" && state.message) alertRef.current?.focus();
   }, [state]);
@@ -52,7 +68,6 @@ export function LogHoursForm({ groups }: { groups: GroupOption[] }) {
   }
 
   const errors = state.errors;
-  const checked = valuesOf(state, "activities");
 
   return (
     <form action={formAction} noValidate className="relative flex flex-col gap-6">
@@ -78,12 +93,30 @@ export function LogHoursForm({ groups }: { groups: GroupOption[] }) {
             name="activities"
             value={activity.value}
             label={activity.label}
-            defaultChecked={checked.includes(activity.value)}
+            defaultChecked={picked.includes(activity.value)}
+            onChange={(on) => toggle(activity.value, on)}
           />
         ))}
       </Fieldset>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      {isWriting ? (
+        <Alert tone="info" title="Stories go somewhere else">
+          <p>
+            Writing for the blog runs through its own form — an editor reads every submission and
+            works with you on edits before anything goes live. This page only records hours.
+          </p>
+          <p className="mt-2">
+            You can still log the hours you spent writing here. Send the story itself over there.
+          </p>
+          <div className="mt-4">
+            <Button href="/blog/submit" size="sm">
+              Go to the story form
+            </Button>
+          </div>
+        </Alert>
+      ) : null}
+
+      <div className={madeCards ? "grid gap-4 sm:grid-cols-2" : "grid gap-4"}>
         <Field
           label="Hours"
           htmlFor="hours"
@@ -106,19 +139,23 @@ export function LogHoursForm({ groups }: { groups: GroupOption[] }) {
           />
         </Field>
 
-        <Field label="Cards made" htmlFor="cardsMade" error={errors?.cardsMade}>
-          <Input
-            id="cardsMade"
-            name="cardsMade"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            step="1"
-            placeholder="0"
-            defaultValue={valueOf(state, "cardsMade")}
-            error={errors?.cardsMade}
-          />
-        </Field>
+        {/* Only asked of people who made cards. Everyone else was being shown a
+            box that could only ever be zero. */}
+        {madeCards ? (
+          <Field label="Cards made" htmlFor="cardsMade" required error={errors?.cardsMade}>
+            <Input
+              id="cardsMade"
+              name="cardsMade"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step="1"
+              placeholder="0"
+              defaultValue={valueOf(state, "cardsMade")}
+              error={errors?.cardsMade}
+            />
+          </Field>
+        ) : null}
       </div>
 
       <Field
@@ -163,9 +200,14 @@ export function LogHoursForm({ groups }: { groups: GroupOption[] }) {
       ) : null}
 
       <Field
-        label="Photo of your cards"
+        label="Proof of volunteering"
         htmlFor="proof"
-        hint="Photograph the cards, not people. It's how we check the work before certifying it."
+        required
+        hint={
+          madeCards
+            ? "Photograph the cards, not people — a clear shot where we can count them. If you're mailing them yourself, add a photo of the envelope with Hearts4Hands written on it."
+            : "A photo of the bake sale table, the event, a screenshot of the post — whatever shows the work. Photograph the work, not people."
+        }
         error={errors?.proof}
       >
         <FileField
@@ -173,10 +215,41 @@ export function LogHoursForm({ groups }: { groups: GroupOption[] }) {
           name="proof"
           accept={acceptedTypes}
           maxBytes={MAX_UPLOAD_BYTES}
+          required
           error={errors?.proof}
           hint="Drag a photo here, or choose a file. Up to 8 MB."
         />
       </Field>
+
+      {/* Only cards need posting anywhere, so only card entries get asked. */}
+      {madeCards ? (
+        <Fieldset
+          legend="How are the cards getting there?"
+          hint="Either is fine — we just need to know what to expect."
+          error={errors?.deliveryMethod}
+        >
+          {deliveryMethods.map((method) => (
+            <label
+              key={`${method.value}-${attempt}`}
+              htmlFor={`delivery-${method.value}`}
+              className="group flex cursor-pointer items-start gap-3 rough-3 border-2 border-brown/45 bg-paper p-3.5 transition-colors duration-150 hover:border-red hover:bg-blush/60 has-checked:border-red has-checked:bg-blush"
+            >
+              <input
+                type="radio"
+                id={`delivery-${method.value}`}
+                name="deliveryMethod"
+                value={method.value}
+                defaultChecked={valueOf(state, "deliveryMethod") === method.value}
+                className="mt-1 h-5 w-5 shrink-0 accent-red"
+              />
+              <span className="flex flex-col gap-0.5">
+                <span className="font-display font-bold text-brown">{method.label}</span>
+                <span className="text-sm text-brown-mid">{method.blurb}</span>
+              </span>
+            </label>
+          ))}
+        </Fieldset>
+      ) : null}
 
       <Field label="Anything else?" htmlFor="notes" error={errors?.notes}>
         <Textarea

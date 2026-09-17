@@ -104,6 +104,7 @@ export function FileField({
   error,
   hint,
   maxBytes,
+  required,
 }: {
   id: string;
   name: string;
@@ -111,6 +112,7 @@ export function FileField({
   error?: string;
   hint?: string;
   maxBytes?: number;
+  required?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -162,6 +164,8 @@ export function FileField({
       >
         <input
           ref={inputRef}
+        required={required}
+        aria-required={required || undefined}
           id={id}
           name={name}
           type="file"

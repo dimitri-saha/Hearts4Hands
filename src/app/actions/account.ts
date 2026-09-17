@@ -344,6 +344,7 @@ export async function logHours(_prev: ActionState, formData: FormData): Promise<
     activityDate: formData.get("activityDate") ?? "",
     notes: formData.get("notes") ?? "",
     groupId: formData.get("groupId") ?? "",
+    deliveryMethod: formData.get("deliveryMethod") ?? "",
   });
 
   if (!parsed.success) {
@@ -352,7 +353,9 @@ export async function logHours(_prev: ActionState, formData: FormData): Promise<
 
   const proof = formData.get("proof");
   const proofFile = proof instanceof File && proof.size > 0 ? proof : null;
-  const proofError = validateProofFile(proofFile);
+  // Required now, not optional: an entry with no evidence can't be checked, and
+  // an unverifiable entry is one we'd have to certify on trust.
+  const proofError = validateProofFile(proofFile, { required: true });
   if (proofError) {
     return errorState("Please check the highlighted fields.", { proof: proofError }, echoed);
   }
@@ -413,6 +416,7 @@ export async function logHours(_prev: ActionState, formData: FormData): Promise<
     activity_date: data.activityDate,
     notes: data.notes,
     proof_path: proofPath,
+    delivery_method: data.activities.includes("cards") ? data.deliveryMethod : null,
   });
 
   if (error) {

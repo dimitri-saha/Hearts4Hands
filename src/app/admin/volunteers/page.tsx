@@ -13,7 +13,7 @@ import {
   FilterTabs,
   StatusBadge,
 } from "@/components/admin";
-import { requireAdmin } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { volunteerActivities } from "@/lib/site";
 import { getServiceClient } from "@/lib/supabase/server";
 import { isGuardianSubmission } from "@/lib/validation";
@@ -55,7 +55,7 @@ export default async function AdminVolunteersPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  await requireAdmin("/admin/volunteers");
+  await requireOwner("/admin/volunteers");
 
   const filter = parseFilter((await searchParams).status);
   const supabase = getServiceClient();
@@ -361,6 +361,19 @@ export default async function AdminVolunteersPage({
                         {formatNumber(row.cards_made ?? 0)}
                       </span>
                     </AdminDetail>
+                    {/* Only card entries carry this — it tells whoever handles
+                        the post whether a parcel is coming to us or going out. */}
+                    {row.delivery_method ? (
+                      <AdminDetail label="Getting there by">
+                        {row.delivery_method === "print_ship" ? (
+                          <span className="font-display font-bold text-berry">
+                            We print &amp; mail it
+                          </span>
+                        ) : (
+                          "Volunteer mails it themselves"
+                        )}
+                      </AdminDetail>
+                    ) : null}
                     <AdminDetail label="Activity date">
                       {row.activity_date ? formatDate(row.activity_date) : "Not given"}
                     </AdminDetail>

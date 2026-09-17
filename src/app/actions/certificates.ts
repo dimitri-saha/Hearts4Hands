@@ -161,10 +161,10 @@ export async function requestClubCertificate(
  * and /verify would keep confirming it.
  */
 export async function revokeCertificate(formData: FormData): Promise<void> {
-  const { requireAdmin } = await import("@/lib/auth");
+  const { requireOwner } = await import("@/lib/auth");
   const { getServiceClient } = await import("@/lib/supabase/server");
 
-  const admin = await requireAdmin();
+  const admin = await requireOwner("/admin/certificates");
   const client = getServiceClient();
   if (!client) return;
 

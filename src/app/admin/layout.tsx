@@ -23,7 +23,14 @@ export const metadata: Metadata = {
  */
 export const dynamic = "force-dynamic";
 
-const navItems: AdminNavItem[] = [
+/**
+ * An editor sees only the stories queue.
+ *
+ * This is presentation, not protection — every page and action behind these
+ * links calls `requireOwner()` itself. Hiding a link somebody can't use is
+ * courtesy; relying on a hidden link for security would not be.
+ */
+const ownerNav: AdminNavItem[] = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/volunteers", label: "Volunteer hours" },
   { href: "/admin/stories", label: "Stories" },
@@ -31,6 +38,12 @@ const navItems: AdminNavItem[] = [
   { href: "/admin/messages", label: "Messages" },
   { href: "/admin/stats", label: "Impact numbers" },
   { href: "/admin/emails", label: "Emails" },
+  { href: "/admin/team", label: "Admin accounts" },
+  { href: "/", label: "View site ↗", separated: true },
+];
+
+const editorNav: AdminNavItem[] = [
+  { href: "/admin/stories", label: "Stories" },
   { href: "/", label: "View site ↗", separated: true },
 ];
 
@@ -47,6 +60,8 @@ export default async function AdminLayout({
   // Signed out (or Supabase isn't configured yet): render the login page bare,
   // with no nav chrome pointing at pages it can't reach.
   if (!user) return <>{children}</>;
+
+  const navItems = user.role === "owner" ? ownerNav : editorNav;
 
   return (
     <div className="min-h-dvh bg-paper-deep">
@@ -65,7 +80,10 @@ export default async function AdminLayout({
               className="h-8 w-8 shrink-0 object-contain"
             />
             <span className="font-hand text-xl leading-none text-red-deep">
-              hearts4hands <span className="text-brown-mid">admin</span>
+              hearts4hands{" "}
+              <span className="text-brown-mid">
+                {user.role === "owner" ? "admin" : "editor"}
+              </span>
             </span>
           </Link>
 

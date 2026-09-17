@@ -156,6 +156,7 @@ export function CheckboxRow({
   error,
   defaultChecked,
   className,
+  onChange,
 }: {
   id: string;
   name: string;
@@ -165,6 +166,8 @@ export function CheckboxRow({
   error?: string;
   defaultChecked?: boolean;
   className?: string;
+  /** Reports the new checked state, for forms whose fields depend on this one. */
+  onChange?: (checked: boolean) => void;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -185,6 +188,7 @@ export function CheckboxRow({
             name={name}
             value={value}
             defaultChecked={defaultChecked}
+            onChange={onChange ? (e) => onChange(e.currentTarget.checked) : undefined}
             aria-invalid={error ? true : undefined}
             aria-describedby={describedBy(id, hint, error)}
             className="peer h-6 w-6 cursor-pointer appearance-none rounded-[7px_9px_6px_10px] border-[2.5px] border-brown bg-paper checked:bg-red checked:border-brown"

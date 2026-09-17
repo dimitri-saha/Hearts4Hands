@@ -25,6 +25,8 @@ export type VolunteerSignup = {
   activity_date: string | null;
   notes: string | null;
   proof_path: string | null;
+  /** 'self' | 'print_ship'. Null when the entry involved no card-making. */
+  delivery_method: string | null;
   /** Null for rows created before accounts existed, or after an account was deleted. */
   user_id: string | null;
   group_id: string | null;
@@ -125,8 +127,12 @@ export type GroupMember = {
   joined_at: string;
 };
 
+export type AdminRole = "owner" | "editor";
+
 export type Admin = {
   user_id: string;
+  /** 'owner' = everything. 'editor' = story submissions and posts only. */
+  role: AdminRole;
   email: string | null;
   created_at: string;
 }
@@ -195,11 +201,18 @@ export type Database = {
           | "reviewed_at"
           | "group_id"
           | "user_id"
+          | "delivery_method"
         > &
           Partial<
             Pick<
               VolunteerSignup,
-              "id" | "status" | "reviewer_note" | "reviewed_at" | "group_id" | "user_id"
+              | "id"
+              | "status"
+              | "reviewer_note"
+              | "reviewed_at"
+              | "group_id"
+              | "user_id"
+              | "delivery_method"
             >
           >;
         Update: Partial<VolunteerSignup>;
@@ -249,7 +262,9 @@ export type Database = {
       };
       admins: {
         Row: Admin;
-        Insert: Admin;
+        // `created_at` and `role` both have database defaults.
+        Insert: Omit<Admin, "created_at" | "role"> &
+          Partial<Pick<Admin, "created_at" | "role">>;
         Update: Partial<Admin>;
         Relationships: [];
       };
@@ -299,6 +314,8 @@ export type Database = {
       verify_certificate: { Args: { p_code: string }; Returns: CertificateVerification[] };
       club_approved_totals: { Args: { gid: string }; Returns: ClubTotals[] };
       is_admin: { Args: Record<string, never>; Returns: boolean };
+      is_owner: { Args: Record<string, never>; Returns: boolean };
+      admin_role: { Args: Record<string, never>; Returns: string };
       is_group_member: { Args: { gid: string }; Returns: boolean };
       is_group_leader: { Args: { gid: string }; Returns: boolean };
       purge_rejected_submissions: { Args: { retain?: string }; Returns: number };

@@ -10,7 +10,7 @@ import {
   FilterTabs,
   StatusBadge,
 } from "@/components/admin";
-import { requireAdmin } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase/server";
 import type { ContactMessage } from "@/lib/supabase/types";
 import { formatDate } from "@/lib/utils";
@@ -68,7 +68,7 @@ export default async function AdminMessagesPage({
 }: {
   searchParams: Promise<{ handled?: string }>;
 }) {
-  await requireAdmin("/admin/messages");
+  await requireOwner("/admin/messages");
 
   const filter = parseFilter((await searchParams).handled);
   const supabase = getServiceClient();

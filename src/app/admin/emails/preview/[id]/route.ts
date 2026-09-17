@@ -1,11 +1,11 @@
 import { findSample } from "@/lib/email/samples";
-import { requireAdmin } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 
 /** Serves one sample's raw HTML, so the preview page can show it in an iframe. */
 export const dynamic = "force-dynamic";
 
 export async function GET(_request: Request, ctx: { params: Promise<{ id: string }> }) {
-  await requireAdmin("/admin/emails");
+  await requireOwner("/admin/emails");
   const { id } = await ctx.params;
 
   const sample = findSample(id);

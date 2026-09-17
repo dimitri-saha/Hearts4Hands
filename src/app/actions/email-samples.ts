@@ -11,12 +11,12 @@ import { errorState, successState, type ActionState } from "@/lib/action-state";
  * accident while checking a layout.
  */
 export async function sendSampleEmails(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const { requireAdmin } = await import("@/lib/auth");
+  const { requireOwner } = await import("@/lib/auth");
   const { isEmailConfigured, sendBuilt } = await import("@/lib/email");
   const { emailSamples } = await import("@/lib/email/samples");
   const { rateLimit } = await import("@/lib/rate-limit");
 
-  const admin = await requireAdmin("/admin/emails");
+  const admin = await requireOwner("/admin/emails");
 
   const to = String(formData.get("to") ?? "").trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(to)) {

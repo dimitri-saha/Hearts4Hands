@@ -1,7 +1,7 @@
 import { revokeCertificate } from "@/app/actions/certificates";
 import { getAllCertificates } from "@/lib/certificates";
 import { formatDate, formatNumber } from "@/lib/utils";
-import { requireAdmin } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { Card, Tag } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/Feedback";
 
@@ -17,7 +17,7 @@ export const metadata = { title: "Certificates" };
  * What an admin needs is the ability to take one back.
  */
 export default async function AdminCertificatesPage() {
-  await requireAdmin("/admin/certificates");
+  await requireOwner("/admin/certificates");
   const certificates = await getAllCertificates();
 
   const live = certificates.filter((c) => !c.revoked_at);

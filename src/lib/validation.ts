@@ -6,11 +6,16 @@ import {
   UNDER_13,
   ageGroups,
   blogCategories,
+  deliveryMethods,
   volunteerActivities,
 } from "./site";
 
 const categoryValues = blogCategories.map((c) => c.value) as [string, ...string[]];
 const activityValues = volunteerActivities.map((a) => a.value) as [string, ...string[]];
+const deliveryMethodValues = deliveryMethods.map((d) => d.value) as [
+  "self",
+  "print_ship",
+];
 const ageGroupValues = [...ageGroups] as unknown as [string, ...string[]];
 
 /** Collapses whitespace and trims — form values arrive with stray newlines. */
@@ -76,8 +81,15 @@ export function isGuardianSubmission(ageGroup: string | null | undefined) {
  * rather than from whatever someone typed. `validateProofFile` is still shared.
  */
 
-export function validateProofFile(file: File | null): string | null {
-  if (!file || file.size === 0) return null;
+export function validateProofFile(
+  file: File | null,
+  { required = false }: { required?: boolean } = {},
+): string | null {
+  if (!file || file.size === 0) {
+    return required
+      ? "Please attach a photo — it's how we check the work before certifying it."
+      : null;
+  }
   if (file.size > MAX_UPLOAD_BYTES) {
     return `That file is ${(file.size / 1024 / 1024).toFixed(1)} MB — please keep uploads under 8 MB.`;
   }
@@ -131,10 +143,42 @@ export const logHoursSchema = antiSpamSchema.extend({
     .transform((v) => (v.length ? v : null))
     .nullable()
     .catch(null),
-}).refine((d) => d.hours > 0 || d.cardsMade > 0, {
-  error: "Add some hours or some cards — otherwise there's nothing to log.",
-  path: ["hours"],
-});
+  /**
+   * How the cards reach the hospital. Only meaningful — and only required —
+   * when "cards" is one of the activities; see the superRefine below.
+   */
+  deliveryMethod: z
+    .string()
+    .trim()
+    .transform((v) => (v.length ? v : null))
+    .nullable()
+    .catch(null)
+    .pipe(z.enum(deliveryMethodValues).nullable()),
+})
+  .refine((d) => d.hours > 0 || d.cardsMade > 0, {
+    error: "Add some hours or some cards — otherwise there's nothing to log.",
+    path: ["hours"],
+  })
+  .superRefine((d, ctx) => {
+    const madeCards = d.activities.includes("cards");
+
+    // Only asked when cards were made, so only enforced then — otherwise a
+    // fundraiser would be blocked by a question that was never shown to them.
+    if (madeCards && !d.deliveryMethod) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["deliveryMethod"],
+        message: "Let us know how the cards are getting there.",
+      });
+    }
+    if (madeCards && d.cardsMade < 1) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["cardsMade"],
+        message: "How many cards did you make?",
+      });
+    }
+  });
 
 // --- Blog submission ---------------------------------------------------------
 

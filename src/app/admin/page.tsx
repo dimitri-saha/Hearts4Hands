@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { redirect } from "next/navigation";
+
 import { requireAdmin } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase/server";
 import type { SubmissionStatus } from "@/lib/supabase/types";
@@ -124,6 +126,9 @@ async function loadDashboard(): Promise<Dashboard | null> {
 
 export default async function AdminOverviewPage() {
   const user = await requireAdmin("/admin");
+  // The overview totals volunteer hours, messages and posts. An editor has no
+  // business with the first two, so they start at the stories queue instead.
+  if (user.role !== "owner") redirect("/admin/stories");
   const data = await loadDashboard();
 
   const waiting = data

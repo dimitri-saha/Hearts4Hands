@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { errorState, successState, type ActionState } from "@/lib/action-state";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireOwner } from "@/lib/auth";
 import { excerptFrom, slugify } from "@/lib/utils";
 import { getServiceClient, getSessionClient } from "@/lib/supabase/server";
 import { PROOF_BUCKET } from "@/lib/supabase/types";
@@ -13,7 +13,10 @@ import { fieldErrors, publishSchema, statsSchema } from "@/lib/validation";
 /**
  * Admin-only mutations.
  *
- * Every function here starts with `requireAdmin()` — which redirects to the
+ * Every function here starts with a guard. `requireAdmin()` allows editors,
+ * and is used only by the story-queue actions they were recruited for.
+ * `requireOwner()` is everything else — volunteer hours, proof photos, the
+ * impact numbers, contact messages — which redirects to the
  * login page when the caller isn't on the `admins` allow-list. Server actions
  * are POST endpoints reachable by anyone who knows the action id, so the guard
  * has to live in the action, not only in the page that renders the form.
@@ -72,7 +75,7 @@ export async function signOut() {
 // ---------------------------------------------------------------------------
 
 export async function reviewVolunteer(formData: FormData): Promise<void> {
-  await requireAdmin("/admin/volunteers");
+  await requireOwner("/admin/volunteers");
 
   const id = String(formData.get("id") ?? "");
   const status = String(formData.get("status") ?? "");
@@ -149,7 +152,7 @@ export async function reviewVolunteer(formData: FormData): Promise<void> {
  * leaked URL stops working the same afternoon.
  */
 export async function getProofUrl(path: string): Promise<string | null> {
-  await requireAdmin("/admin/volunteers");
+  await requireOwner("/admin/volunteers");
 
   const supabase = getServiceClient();
   if (!supabase) return null;
@@ -479,7 +482,7 @@ export async function updatePost(formData: FormData): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function updateStats(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireAdmin("/admin/stats");
+  await requireOwner("/admin/stats");
 
   const parsed = statsSchema.safeParse({
     totalRaised: formData.get("totalRaised") || 0,
@@ -543,7 +546,7 @@ export async function updateStats(_prev: ActionState, formData: FormData): Promi
 // ---------------------------------------------------------------------------
 
 export async function setMessageHandled(formData: FormData): Promise<void> {
-  await requireAdmin("/admin/messages");
+  await requireOwner("/admin/messages");
 
   const id = String(formData.get("id") ?? "");
   const handled = String(formData.get("handled") ?? "") === "true";

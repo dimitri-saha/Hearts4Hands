@@ -254,7 +254,7 @@ export type LeaderProfile = {
 export const leadershipTeam: LeaderProfile[] = [
   {
     name: "Ira Verma",
-    role: "Co-President",
+    role: "Founder and Co-President",
     location: "San Ramon, CA",
     photo: "/team/Ira_Verma.jpg",
   },
@@ -272,7 +272,7 @@ export const leadershipTeam: LeaderProfile[] = [
   },
   {
     name: "Dimitri Saha",
-    role: "Treasurer and Tech Lead",
+    role: "Treasurer and Head of Technology",
     location: "San Ramon, CA",
   },
   {
@@ -306,7 +306,7 @@ export type Signatory = {
 export const certificateSignatories: Signatory[] = [
   {
     name: "Ira Verma",
-    role: "Co-President, Hearts4Hands",
+    role: "Founder and Co-President, Hearts4Hands",
     signature: "signatures/Ira_Verma.png",
   },
   {
@@ -336,6 +336,28 @@ export const milestones = [
 ] as const;
 
 /** Maximum upload size for volunteer proof photos, in bytes. */
+/**
+ * How a batch of cards gets to the hospital.
+ *
+ * Recorded so the team knows what to expect in the post. Choosing "print_ship"
+ * does not yet trigger anything automatically — it flags the entry for whoever
+ * is handling fulfilment.
+ */
+export const deliveryMethods = [
+  {
+    value: "self",
+    label: "I'm mailing them myself",
+    blurb: "We'll give you the address. Photograph the envelope with Hearts4Hands written on it.",
+  },
+  {
+    value: "print_ship",
+    label: "Please print and mail them for me",
+    blurb: "We print your card from the photo you uploaded and post it for you. Good if postage is hard to get.",
+  },
+] as const;
+
+export type DeliveryMethod = (typeof deliveryMethods)[number]["value"];
+
 export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
 export const ACCEPTED_IMAGE_TYPES = [

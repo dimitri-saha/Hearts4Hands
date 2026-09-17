@@ -1,6 +1,6 @@
 import { emailSamples } from "@/lib/email/samples";
 import { isEmailConfigured } from "@/lib/email";
-import { requireAdmin } from "@/lib/auth";
+import { requireOwner } from "@/lib/auth";
 import { Card, Tag } from "@/components/ui/Card";
 import { Alert } from "@/components/ui/Feedback";
 import { SendSamplesForm } from "@/components/admin/SendSamplesForm";
@@ -16,7 +16,7 @@ export const metadata = { title: "Emails" };
  * cannot drift from what gets sent.
  */
 export default async function AdminEmailsPage() {
-  const admin = await requireAdmin("/admin/emails");
+  const admin = await requireOwner("/admin/emails");
 
   return (
     <div className="flex flex-col gap-8">
