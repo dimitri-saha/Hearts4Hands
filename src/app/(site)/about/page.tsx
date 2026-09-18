@@ -13,7 +13,7 @@ import { Section, SectionHeading, sectionHex } from "@/components/ui/Section";
 export const metadata: Metadata = {
   title: "About us",
   description:
-    "How Hearts4Hands started, what we believe, and who is behind the cards. A student-led group making cards for kids in hospitals and raising money for cancer research.",
+    "How Hearts4Hands started, what we believe, and who is behind the cards. A student-led group making cards for patients in hospitals and raising money for cancer research.",
   alternates: { canonical: "/about" },
 };
 
@@ -23,39 +23,51 @@ export default function AboutPage() {
       <PageHeader
         eyebrow="About us"
         title="It started with paper and crayons"
-        intro="Hearts4Hands is a student-led group. We make cards for kids in hospitals, publish stories written by volunteers, and raise money for cancer research."
+        intro="Hearts4Hands is a student-led group. We make cards for patients in hospitals, publish stories written by volunteers, and raise money for cancer research."
         illustration={<HandsHeart className="h-36 w-40 sm:h-44 sm:w-48" />}
         nextTone="paper"
       />
 
       {/* ---------------------------------------------------------------- story */}
       <Section tone="paper" width="narrow">
-        <SectionHeading eyebrow="Our story" title="A kid in a hospital bed should get mail" />
+        <SectionHeading eyebrow="Our story" title="Why We Started Hearts4Hands" />
 
+        {/* A personal account in the founder's own words. Kept verbatim — this is
+            not house copy to be edited for tone. */}
         <div className="mx-auto mt-8 max-w-2xl space-y-5 text-lg text-brown">
           <p>
-            A hospital room is a strange place to be a kid. The lights hum, the days blur, and
-            almost everything that happens to you is decided by somebody else. Hearts4Hands started
-            with one small idea about that: mail. Something that arrives with your name on it,
-            drawn by a person who does not want anything from you.
+            In 2021, my grandfather passed away from cancer. But losing him wasn&apos;t what hurt
+            the most.
           </p>
           <p>
-            It began as a student project — a stack of construction paper, a box of crayons, and a
-            long list of ideas. There was no office and no budget. There still is not much of
-            either. What there is, is a way to turn an afternoon at a kitchen table into something
-            that lands in a real kid&apos;s hands.
+            What hurt was watching him disappear years before that — in the summers I spent at his
+            apartment in India. He was the man who sat with me at the dinner table while I drew,
+            painted, and made bracelets, content just reading beside me. He taught me to ride a
+            bike. He sat with me in silence on the nights my parents came home late from work, just
+            so I wouldn&apos;t be alone. Cancer took all of that first. By the time I actually lost
+            him, I had already lost the dada ji I remembered.
           </p>
           <p>
-            Two things grew out of that. Volunteers kept telling us stories — about a sibling,
-            about a diagnosis, about the year everything changed — so we built a place to publish
-            them, with an editor reading every submission first. And because paper, envelopes, and
-            stamps cost money, we started fundraising. Whatever is left after materials goes to
-            cancer research.
+            Over the next five years, I watched family friends fight the same disease — receiving
+            far better treatment here in the U.S. than my grandfather ever had in India. I watched
+            my parents sit with them the way my grandfather once sat with me, listening as they
+            relived experiences no one should have to go through alone.
           </p>
+
+          <p className="border-l-4 border-pink-deep py-1 pl-5 font-display text-2xl leading-snug text-berry">
+            A patient deserves support. So do the people who love them.
+          </p>
+
           <p>
-            We are new, and we would rather say that plainly than pretend otherwise. What we can
-            promise is how we work: handmade, open about where the money goes, and run by students
-            who show up.
+            Most of my creativity came from the quiet hours I spent with my grandfather.
+            Hearts4Hands exists to send that same creativity back out — to patients who need
+            someone in their corner, the way he was always in mine. But he wouldn&apos;t want us to
+            stop at patients. He&apos;d want us supporting families too, which is why we built a
+            blog where families can find what to expect, what to do, and proof that they&apos;re
+            not alone.
+          </p>
+          <p className="font-display text-xl text-red-deep">
+            Our creativity is our courage against cancer. It can be yours too.
           </p>
         </div>
 

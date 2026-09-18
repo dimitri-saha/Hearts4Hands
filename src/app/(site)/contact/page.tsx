@@ -199,7 +199,7 @@ export default function ContactPage() {
               <p>
                 The short version: our volunteers make handmade cards, and you tell us what your
                 unit needs. Every hospital has its own rules about what can come through the door —
-                materials, sealed packaging, no glitter, no food, nothing with a child&apos;s name
+                materials, sealed packaging, no glitter, no food, nothing with a patient&apos;s name
                 on it, drop-off versus mail. Send us yours and we&apos;ll brief our volunteers on
                 them before a single card is made.
               </p>

@@ -37,7 +37,54 @@ type Dashboard = {
   unhandledMessages: number;
   publishedPosts: number;
   activity: Activity[];
+  accounts: AccountCounts;
 };
+
+type AccountCounts = {
+  total: number;
+  confirmed: number;
+  unconfirmed: number;
+  activeLast30: number;
+  newLast7: number;
+  admins: number;
+};
+
+/**
+ * How many people have accounts.
+ *
+ * Counted from Supabase Auth rather than `profiles`: an account can exist
+ * without a profile (dashboard-created ones did, before the complete-profile
+ * step), and an unconfirmed sign-up has no profile yet but is still a person
+ * who tried. Numbers only — no names or emails leave this function.
+ */
+async function countAccounts(): Promise<AccountCounts> {
+  const empty = { total: 0, confirmed: 0, unconfirmed: 0, activeLast30: 0, newLast7: 0, admins: 0 };
+  const supabase = getServiceClient();
+  if (!supabase) return empty;
+
+  const [{ data, error }, adminRows] = await Promise.all([
+    supabase.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    supabase.from("admins").select("user_id", { count: "exact", head: true }),
+  ]);
+  if (error) {
+    console.error("[admin] account count failed:", error.message);
+    return empty;
+  }
+
+  const now = Date.now();
+  const day = 86_400_000;
+  const users = data?.users ?? [];
+  return {
+    total: users.length,
+    confirmed: users.filter((u) => u.email_confirmed_at).length,
+    unconfirmed: users.filter((u) => !u.email_confirmed_at).length,
+    activeLast30: users.filter(
+      (u) => u.last_sign_in_at && now - Date.parse(u.last_sign_in_at) < 30 * day,
+    ).length,
+    newLast7: users.filter((u) => now - Date.parse(u.created_at) < 7 * day).length,
+    admins: adminRows.count ?? 0,
+  };
+}
 
 /**
  * Counts come back as `head: true` queries — Postgres returns the number and
@@ -121,6 +168,7 @@ async function loadDashboard(): Promise<Dashboard | null> {
     unhandledMessages: messagesUnhandled.count ?? 0,
     publishedPosts: postsPublished.count ?? 0,
     activity,
+    accounts: await countAccounts(),
   };
 }
 
@@ -202,6 +250,26 @@ export default async function AdminOverviewPage() {
               value={data.publishedPosts}
               hint="live on the blog"
               href="/admin/stories"
+            />
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <AdminStat
+              label="Accounts"
+              value={data.accounts.total}
+              hint={`${data.accounts.confirmed} confirmed · ${data.accounts.unconfirmed} never confirmed`}
+            />
+            <AdminStat
+              label="Active in 30 days"
+              value={data.accounts.activeLast30}
+              hint="signed in at least once"
+            />
+            <AdminStat label="New this week" value={data.accounts.newLast7} hint="accounts created" />
+            <AdminStat
+              label="Admin accounts"
+              value={data.accounts.admins}
+              hint="owners and editors"
+              href="/admin/team"
             />
           </div>
 

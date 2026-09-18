@@ -291,7 +291,7 @@ export default async function DonatePage() {
           <h2 className="text-3xl sm:text-4xl">Would you rather give time?</h2>
           <p className="max-w-prose text-brown-mid">
             That works just as well. An afternoon, some crayons, and a stack of paper turns into
-            mail that makes a kid laugh.
+            mail that makes a patient laugh.
           </p>
           <Button href="/volunteer" size="lg">
             Volunteer instead

@@ -40,7 +40,7 @@ export function Hero() {
           </h1>
 
           <p className="mt-5 text-lg text-brown-mid sm:text-xl">
-            We are students who draw cards for kids in hospitals, then mail them
+            We are students who draw cards for patients in hospitals, then mail them
             out. We publish stories from people living with cancer and the
             people caring for them. And the money we raise buys paper, postage,
             and cancer research.

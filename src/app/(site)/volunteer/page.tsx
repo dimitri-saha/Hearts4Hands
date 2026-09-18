@@ -27,7 +27,7 @@ import { SignInPrompt } from "@/components/account/SignInPrompt";
 export const metadata: Metadata = {
   title: "Volunteer",
   description:
-    "Make cards for kids in hospitals, fundraise, write, or bring Hearts4Hands to your school. Log your hours here — all you need is paper and something colorful.",
+    "Make cards for patients in hospitals, fundraise, write, or bring Hearts4Hands to your school. Log your hours here — all you need is paper and something colorful.",
   alternates: { canonical: "/volunteer" },
 };
 
@@ -48,7 +48,7 @@ const yesPlease = [
 
 const pleaseSkip = [
   "Glitter. Hospitals ask us not to send it, and it gets everywhere.",
-  "“Get well soon.” Some kids are in treatment a long time, and it can land like a deadline.",
+  "“Get well soon.” Some patients are in treatment a long time, and it can land like a deadline.",
   "Anything naming a specific illness or treatment.",
   "Religious messages — we can't know what each family believes.",
   "Your address, phone number, email, or last name.",

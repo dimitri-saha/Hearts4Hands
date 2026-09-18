@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     absolute: `${site.name} — creativity is a form of courage`,
   },
   description:
-    "Handmade cards for kids in hospitals, stories written by volunteers, and money raised for cancer research. Start with one card.",
+    "Handmade cards for patients in hospitals, stories written by volunteers, and money raised for cancer research. Start with one card.",
   alternates: { canonical: "/" },
 };
 

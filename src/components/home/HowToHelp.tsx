@@ -12,7 +12,7 @@ const steps = [
   },
   {
     title: "We deliver, your hours count",
-    body: "Cards go out to kids in hospitals, and your approved hours build up into a certificate you can ask us for.",
+    body: "Cards go out to patients in hospitals, and your approved hours build up into a certificate you can ask us for.",
   },
 ];
 

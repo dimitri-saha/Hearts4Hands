@@ -12,7 +12,7 @@ export const site = {
   shortName: "heARTs4hands",
   tagline: "Creativity is a form of courage.",
   description:
-    "Hearts4Hands is a student-led volunteer initiative making handmade cards for kids in hospitals, sharing stories about cancer, and raising funds for research — one colorful act of kindness at a time.",
+    "Hearts4Hands is a student-led volunteer initiative making handmade cards for patients in hospitals, sharing stories about cancer, and raising funds for research — one colorful act of kindness at a time.",
   /**
    * Canonical origin, no trailing slash.
    *
@@ -166,7 +166,7 @@ export const volunteerActivities = [
     value: "cards",
     label: "Make hospital cards",
     blurb:
-      "Draw, color, and write cards that get delivered to kids in treatment. All you need is paper and something colorful.",
+      "Draw, color, and write cards that get delivered to patients in treatment. All you need is paper and something colorful.",
   },
   {
     value: "fundraising",
@@ -321,7 +321,7 @@ export const milestones = [
   {
     year: "The spark",
     title: "One card at a time",
-    body: "Hearts4Hands began with a simple idea: a kid in a hospital bed should get mail that makes them laugh.",
+    body: "Hearts4Hands began with a simple idea: a patient in a hospital bed should get mail that makes them laugh.",
   },
   {
     year: "Growing",

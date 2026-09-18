@@ -34,8 +34,8 @@ export const starterPosts: Post[] = [
     featured: true,
     published_at: iso("2026-06-02"),
     excerpt:
-      "A hospital room is a strange place to be a kid. A card is a small, stubborn reminder that the outside world is still thinking about you.",
-    body: `A hospital room is a strange place to be a kid.
+      "A hospital room is a strange place to be a patient. A card is a small, stubborn reminder that the outside world is still thinking about you.",
+    body: `A hospital room is a strange place to be a patient.
 
 The lights hum. The days blur. Someone is always checking something. And in the middle of all of it, there is a person who would much rather be at recess.
 
@@ -45,7 +45,7 @@ We can't fix that. What we can do is send mail.
 
 A card is small. It takes fifteen minutes and costs almost nothing. But it does something that a lot of bigger, more expensive things can't: it says *someone who has never met you spent their afternoon thinking about you.*
 
-Nurses tell us the cards end up taped to the wall by the bed. They stay there for weeks. Kids read them to their visitors. Some kids write back.
+Nurses tell us the cards end up taped to the wall by the bed. They stay there for weeks. Patients read them to their visitors. Some patients write back.
 
 ## What we look for in a card
 
@@ -57,9 +57,9 @@ We are not looking for great art. We have never once been looking for great art.
 
 ## What we leave out
 
-- No "get well soon." Some of these kids will be in treatment for a long time, and that phrase can land like a deadline.
+- No "get well soon." Some of these patients will be in treatment for a long time, and that phrase can land like a deadline.
 - No glitter. Hospitals ask us not to — it gets everywhere, including places it really shouldn't.
-- No mention of specific illnesses, and no religious messages, so every card works for every kid.
+- No mention of specific illnesses, and no religious messages, so every card works for every patient.
 
 If you have paper and something colorful, you are already qualified. [Start here.](/volunteer)`,
   }),

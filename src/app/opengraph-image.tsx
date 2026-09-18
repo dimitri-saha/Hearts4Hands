@@ -72,7 +72,7 @@ export default async function OpengraphImage() {
           marginTop: 28,
         }}
       >
-        Cards for kids in hospitals · Stories · Funding cancer research
+        Cards for patients in hospitals · Stories · Funding cancer research
       </div>
     </div>,
     size,

@@ -11,8 +11,8 @@ const values: { title: string; body: string; art: ReactNode }[] = [
     art: <Crayon className="h-14 w-6" color="#d24a5e" />,
   },
   {
-    title: "Every kid gets the same care",
-    body: "We do not sort children by diagnosis, hospital, or country. If a card can reach them, they are on the list.",
+    title: "Every patient gets the same care",
+    body: "We do not sort patients by diagnosis, hospital, or country. If a card can reach them, they are on the list.",
     art: <HeartTrio className="h-14 w-20" />,
   },
   {

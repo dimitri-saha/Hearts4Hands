@@ -39,7 +39,7 @@ export function isoDate(input: string | Date) {
   return date.toISOString();
 }
 
-/** "A Card for Every Kid" -> "a-card-for-every-kid" */
+/** "A Card for Every Patient" -> "a-card-for-every-patient" */
 export function slugify(input: string) {
   return input
     .toLowerCase()

@@ -32,7 +32,7 @@ const patrick = Patrick_Hand({
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.name} — cards, stories, and hope for kids with cancer`,
+    default: `${site.name} — cards, stories, and hope for patients with cancer`,
     template: `%s · ${site.name}`,
   },
   description: site.description,

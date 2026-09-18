@@ -20,7 +20,7 @@ export function SiteFooter() {
               <span className="uppercase">a</span>nds
             </p>
             <p className="mt-3 max-w-sm text-brown">
-              Creativity is a form of courage. We make cards for kids in hospitals, share stories
+              Creativity is a form of courage. We make cards for patients in hospitals, share stories
               about cancer, and raise money for research.
             </p>
             <HeartTrio className="mt-4 h-12 w-20" />

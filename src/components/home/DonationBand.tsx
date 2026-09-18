@@ -21,7 +21,7 @@ export function DonationBand({ stats }: { stats: ImpactStats }) {
           <HeartTrio className="h-16 w-24" />
           <h2 className="mt-4 text-3xl sm:text-4xl">Every dollar has a job</h2>
           <p className="mt-4 text-lg text-brown-mid">
-            Part of what you give buys the paper, envelopes, and stamps that get a card to a kid.
+            Part of what you give buys the paper, envelopes, and stamps that get a card to a patient.
             The rest goes to cancer research. We update the totals by hand and show the split.
           </p>
           <div className="mt-7">

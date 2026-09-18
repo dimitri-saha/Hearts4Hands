@@ -165,7 +165,7 @@ export async function buildCertificatePdf(cert: Certificate): Promise<Uint8Array
     : `has volunteered ${hours} ${hourWord}${cardPart}`;
 
   centre(page, claim, regular, fitSize(claim, regular, 19, W - 160, 13), H - 348, c.brown);
-  centre(page, "for children in hospitals", regular, 19, H - 374, c.brown);
+  centre(page, "for patients in hospitals", regular, 19, H - 374, c.brown);
 
   const volunteers = formatNumber(cert.volunteer_count);
   const asOf = isClub

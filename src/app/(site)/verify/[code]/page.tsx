@@ -97,7 +97,7 @@ export default async function VerifyPage({ params }: { params: Promise<{ code: s
                   </strong>
                 </>
               ) : null}{" "}
-              for children in hospitals.
+              for patients in hospitals.
             </p>
 
             {cert.kind === "club" ? (

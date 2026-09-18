@@ -12,7 +12,7 @@ const groups: { title: string; body: string; art: ReactNode }[] = [
   },
   {
     title: "Hospitals and partner organizations",
-    body: "If you work with kids in treatment and want cards, tell us how many and how you would like them delivered. We will work to your rules, not ours.",
+    body: "If you work with patients in treatment and want cards, tell us how many and how you would like them delivered. We will work to your rules, not ours.",
     art: <Envelope className="h-14 w-18" />,
   },
   {

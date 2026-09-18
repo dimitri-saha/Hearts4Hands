@@ -5,8 +5,8 @@ import { Section, SectionHeading } from "@/components/ui/Section";
 const things = [
   {
     href: "/volunteer",
-    title: "Cards for kids in hospitals",
-    body: "Volunteers draw and write cards at home, then send us a photo. We get them to children who are in treatment.",
+    title: "Cards for patients in hospitals",
+    body: "Volunteers draw and write cards at home, then send us a photo. We get them to patients who are in treatment.",
     linkLabel: "See how card-making works",
     art: <GreetingCard className="h-16 w-20" />,
   },

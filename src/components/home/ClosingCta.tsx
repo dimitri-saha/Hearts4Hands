@@ -15,7 +15,7 @@ export function ClosingCta() {
         className="mx-auto h-40 w-auto animate-float sm:h-48"
       />
       <h2 className="mt-6 text-3xl sm:text-4xl">
-        Somewhere there is a kid who would love your handwriting
+        Somewhere there is a patient who would love your handwriting
       </h2>
       <p className="mx-auto mt-4 max-w-lg text-lg text-brown-mid">
         Start with one card. We will show you where to send it and count the

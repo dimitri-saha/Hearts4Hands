@@ -166,7 +166,7 @@ export function renderEmail({
         <td style="background:${ink.kraft};padding:20px 34px;">
           <p style="margin:0 0 6px;font-family:${DISPLAY};font-size:17px;color:${ink.redDeep};">heARTs4hAnds</p>
           <p style="margin:0 0 10px;font-family:${BODY};font-size:13px;line-height:1.6;color:${ink.brownMid};">
-            ${escapeHtml(site.tagline)} We make cards for kids in hospitals, share stories about cancer, and raise money for research.
+            ${escapeHtml(site.tagline)} We make cards for patients in hospitals, share stories about cancer, and raise money for research.
           </p>
           <p style="margin:0;font-family:${BODY};font-size:13px;color:${ink.brownMid};">
             <a href="${site.url}" style="color:${ink.redDeep};text-decoration:underline;">${site.url.replace(/^https?:\/\//, "")}</a>

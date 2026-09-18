@@ -9,7 +9,7 @@ import { Alert, SuccessPanel } from "@/components/ui/Feedback";
 import { Field, Input } from "@/components/ui/Field";
 import { SubmitButton } from "@/components/ui/FormBits";
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm({ next = "/account" }: { next?: string }) {
   const [state, formAction] = useActionState(updatePassword, idleState);
 
   if (state.status === "success") {
@@ -19,9 +19,9 @@ export function ResetPasswordForm() {
         <p className="mt-4">
           <Link
             className="font-bold text-red-deep underline decoration-pink-deep decoration-2 underline-offset-4"
-            href="/account"
+            href={next}
           >
-            Go to your account
+            {next.startsWith("/admin") ? "Go to the admin area" : "Go to your account"}
           </Link>
         </p>
       </SuccessPanel>
